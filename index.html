@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Ariel's interactive mountain — software, ideas, projects, and stories from the trail." />
+    <meta name="theme-color" content="#173d42" />
+    <title>Ariel Cárdenas</title>
+    <script>
+      // Choose the initial scene before the document paints. Excluding the last
+      // session value makes hard-reload testing visibly alternate while the next
+      // state is still selected randomly from the other two possibilities.
+      (() => {
+        const weatherNames = ["sunny", "rainy", "snowy"];
+        let previousWeather = null;
+
+        try {
+          previousWeather = sessionStorage.getItem("mountain-weather");
+        } catch (_) {
+          // Storage can be unavailable in strict privacy/file contexts.
+        }
+
+        const choices = weatherNames.filter((weather) => weather !== previousWeather);
+        const randomValue = globalThis.crypto?.getRandomValues
+          ? globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
+          : Math.random();
+        const initialWeather = choices[Math.floor(randomValue * choices.length)];
+
+        window.__MOUNTAIN_INITIAL_WEATHER = initialWeather;
+        document.documentElement.dataset.initialWeather = initialWeather;
+
+        try {
+          sessionStorage.setItem("mountain-weather", initialWeather);
+        } catch (_) {
+          // The in-memory selection still works when storage is unavailable.
+        }
+      })();
+    </script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css?v=37" />
+    <script src="mountain-renderer.js?v=7" defer></script>
+    <script src="weather-music.js?v=2" defer></script>
+    <script src="main.js?v=25" defer></script>
+  </head>
+
+  <body>
+    <main class="experience" data-weather="sunny" aria-label="Ariel's interactive mountain portfolio">
+      <!-- Images and hotspots share this aspect-ratio container, keeping every
+           clickable point attached to its landmark while the scene is cropped. -->
+      <div class="world" id="world">
+        <picture class="scene-layer is-visible" data-scene-layer="0">
+          <source media="(max-width: 700px)" srcset="Sunny V.png" />
+          <img src="Sunny H.png" alt="" fetchpriority="high" />
+        </picture>
+        <script>
+          // Replace the fallback source synchronously, before first paint, with
+          // the weather selected in <head>.
+          (() => {
+            const weather = window.__MOUNTAIN_INITIAL_WEATHER || "sunny";
+            const labels = { sunny: "Sunny", rainy: "Rainy", snowy: "Snowy" };
+            const layer = document.currentScript.previousElementSibling;
+            layer.querySelector("source").srcset = `${labels[weather]} V.png`;
+            layer.querySelector("img").src = `${labels[weather]} H.png`;
+            document.querySelector(".experience").dataset.weather = weather;
+          })();
+        </script>
+        <picture class="scene-layer" data-scene-layer="1">
+          <source media="(max-width: 700px)" srcset="Sunny V.png" />
+          <img src="Sunny H.png" alt="" />
+        </picture>
+        <!-- WebGL progressively replaces the pictures on supported desktops.
+             The pictures remain underneath as a no-JS/WebGL fallback. -->
+        <canvas class="mountain-canvas" id="mountain-canvas" aria-hidden="true"></canvas>
+        <div class="atmosphere" aria-hidden="true"></div>
+
+        <!-- Hotspot coordinates are defined and documented in styles.css. -->
+        <div class="hotspot-layer" role="group" aria-label="Places to explore">
+          <button class="hotspot hotspot--northstar" type="button" data-panel="northstar" data-focus-view data-tooltip="Northstar · Personal philosophy" aria-label="Look to the Northstar — Ariel's personal philosophy"></button>
+          <button class="hotspot hotspot--base" type="button" data-panel="base" data-focus-view data-tooltip="Base camp · About Ariel" aria-label="Visit base camp — about Ariel"></button>
+          <button class="hotspot hotspot--gym" type="button" data-panel="gym" data-tooltip="Training zone · Skills and goals" aria-label="Visit the training zone — skills and goals"></button>
+          <button class="hotspot hotspot--shop" type="button" data-panel="shop" data-focus-view data-tooltip="Gear shop · Projects" aria-label="Visit the gear shop — projects"></button>
+          <button class="hotspot hotspot--refuge" type="button" data-panel="refuge" data-focus-view data-tooltip="Shangri-La refuge · Books, videogames and languages" aria-label="Visit Shangri-La refuge — books, videogames and languages"></button>
+          <button class="hotspot hotspot--trailmap" type="button" data-panel="trailmap" data-focus-view data-tooltip="Trail map · Routes and objectives" aria-label="Explore the trail map — routes and objectives"></button>
+          <button class="hotspot hotspot--mailbox" type="button" data-panel="news" data-focus-view data-tooltip="News mailbox · Vlogs and blog entries" aria-label="Open the news mailbox — vlogs and blog entries"></button>
+          <button class="hotspot hotspot--summit" type="button" data-panel="summit" data-tooltip="Summit · Get in touch" aria-label="Reach the summit — contact Ariel"></button>
+        </div>
+      </div>
+
+      <div class="scene-vignette" aria-hidden="true"></div>
+
+      <p class="sr-only" id="weather-announcement" aria-live="polite"></p>
+    </main>
+
+    <div class="hover-tooltip" id="hover-tooltip" aria-hidden="true">
+      <span id="hover-tooltip-text"></span>
+    </div>
+
+    <!-- A single native dialog is reused for every location. main.js clones the
+         selected template into it, keeping content editable in plain HTML. -->
+    <dialog class="panel" id="mountain-panel" aria-labelledby="panel-title">
+      <div class="panel-shell">
+        <header class="panel-header">
+          <p><span id="panel-number" hidden aria-hidden="true"></span><span id="panel-location">Base camp</span></p>
+          <button class="panel-close" type="button" data-close-panel aria-label="Close panel"><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
+        </header>
+        <div class="panel-content" id="panel-content"></div>
+      </div>
+    </dialog>
+
+    <template id="panel-base" data-number="" data-location="Base camp">
+      <div class="panel-intro">
+        <p class="panel-kicker">Hello, stranger.</p>
+        <h1 class="panel-statement-title" id="panel-title">My name is <em>Ariel.</em></h1>
+        <p class="panel-lead">This mountain is a small representation of the things I’m currently interested in: tech, the outdoors, and storytelling, to name a few. <br><br>If you’d like to discuss anything you find here, <br>I’d be excited to chat.</p>
+        <nav class="social-links" aria-label="Social profiles">
+          <a class="social-link" href="https://www.instagram.com/ariel_cardenas0/" target="_blank" rel="noreferrer" aria-label="Follow Ariel on Instagram at ariel_cardenas0">
+            <img src="assets/social/instagram.svg" alt="" aria-hidden="true" width="18" height="18" />
+          </a>
+          <a class="social-link" href="https://x.com/ariel_cardenas0" target="_blank" rel="noreferrer" aria-label="Follow Ariel on X at ariel_cardenas0">
+            <img src="assets/social/x.svg" alt="" aria-hidden="true" width="18" height="18" />
+          </a>
+          <a class="social-link" href="https://www.youtube.com/@ariel_cardenas0" target="_blank" rel="noreferrer" aria-label="Visit Ariel's YouTube channel at ariel_cardenas0">
+            <img src="assets/social/youtube.svg" alt="" aria-hidden="true" width="18" height="18" />
+          </a>
+          <a class="social-link" href="https://github.com/ariel-cardenas" target="_blank" rel="noreferrer" aria-label="Visit Ariel on GitHub at ariel-cardenas">
+            <img src="assets/social/github.svg" alt="" aria-hidden="true" width="18" height="18" />
+          </a>
+        </nav>
+      </div>
+    </template>
+
+    <template id="panel-gym" data-number="" data-location="Training ground">
+      <div class="panel-intro">
+        <h1 class="panel-statement-title panel-statement-title--two-lines panel-statement-title--gym" id="panel-title"><span>My real goal is to discover</span><em>what my body is capable of.</em></h1>
+      </div>
+      <div class="training-goals" aria-label="Planned fitness goals">
+        <article><small>End of November 2026</small><h2>First Marathon</h2><p>Target · Complete 42.2 km</p></article>
+        <article><small>March 2027</small><h2>Volcán Acatenango</h2><p>Target · Summit climb · 3,976 m</p></article>
+      </div>
+      <div class="training-records">
+        <section class="training-record-section" aria-labelledby="running-prs-title">
+          <h2 id="running-prs-title">Running PRs</h2>
+          <dl class="training-metrics">
+            <div><dt>1K</dt><dd>3:14</dd></div>
+            <div><dt>Mile</dt><dd>5:38</dd></div>
+            <div><dt>5K</dt><dd>20:23</dd></div>
+            <div><dt>10K</dt><dd>50:15</dd></div>
+            <div><dt>21K</dt><dd>2:02:35</dd></div>
+          </dl>
+        </section>
+        <section class="training-record-section" aria-labelledby="summit-records-title">
+          <h2 id="summit-records-title">Mountain summits</h2>
+          <dl class="training-metrics">
+            <div><dt>Pico de Orizaba <span>5,636 m</span></dt><dd>×8</dd></div>
+            <div><dt>Iztaccíhuatl <span>5,230 m</span></dt><dd>×14</dd></div>
+            <div><dt>Popocatépetl <span>5,426 m</span></dt><dd>×1</dd></div>
+          </dl>
+        </section>
+        <section class="training-record-section" aria-labelledby="strength-prs-title">
+          <h2 id="strength-prs-title">Strength PRs</h2>
+          <dl class="training-metrics">
+            <div><dt>Bench press</dt><dd>90 kg</dd></div>
+            <div><dt>Squat</dt><dd>100 kg</dd></div>
+            <div><dt>Push-ups</dt><dd>132</dd></div>
+            <div><dt>Pull-ups</dt><dd>5 × 25 kg</dd></div>
+          </dl>
+        </section>
+      </div>
+    </template>
+
+    <template id="panel-shop" data-number="" data-location="Project shop">
+      <div class="panel-intro">
+        <h1 class="panel-statement-title panel-statement-title--two-lines panel-statement-title--shop" id="panel-title"><span>I’m a self-taught developer,</span><em>working as a Backend Dev at BAX.</em></h1>
+        <p class="panel-lead">I’m pursuing the ISC2 Certified in Cybersecurity certification and learning about system design.</p>
+      </div>
+      <section class="shop-section" aria-labelledby="shop-projects-title">
+        <h2 class="shop-section-title" id="shop-projects-title">Projects</h2>
+        <div class="project-list">
+          <article>
+            <div><small>Fitness · Live</small><h2>Personal Trainer</h2><p>A personalized workspace for planning, tracking, and adapting running, strength, and hiking workouts, with Garmin integration.</p><div class="project-stack" aria-label="Technologies"><span>Next.js</span><span>TypeScript</span><span>Prisma</span><span>PostgreSQL</span><span>Supabase</span><span>Garmin</span></div></div>
+            <div class="project-actions">
+              <a href="https://personal-trainer-sage-beta.vercel.app/" target="_blank" rel="noreferrer" aria-label="Open the Personal Trainer live app" title="Live app">↗</a>
+              <a href="https://github.com/ariel-cardenas/Personal-Trainer" target="_blank" rel="noreferrer" aria-label="View Personal Trainer on GitHub" title="GitHub repository"><img src="assets/social/github.svg" alt="" aria-hidden="true" width="14" height="14" /></a>
+            </div>
+          </article>
+          <article>
+            <div><small>Gaming · Live · Hackathon winner</small><h2>2048Wars</h2><p>A competitive 2048 game where players compete for weekly ETH rewards on Base.</p><div class="project-stack" aria-label="Technologies"><span>Next.js</span><span>Solidity</span><span>Privy</span><span>TypeScript</span></div></div>
+            <a href="https://2048-wars.vercel.app/" target="_blank" rel="noreferrer" aria-label="Open 2048Wars live demo">↗</a>
+          </article>
+          <article>
+            <div><small>Privacy · Prototype · Hackathon winner</small><h2>Ramen Protocol</h2><p>A privacy-preserving inheritance protocol for passing cultural assets and secret knowledge across generations.</p><div class="project-stack" aria-label="Technologies"><span>Next.js</span><span>Solidity</span><span>Foundry</span><span>Semaphore</span><span>IPFS</span><span>Privy</span></div></div>
+            <a href="https://www.loom.com/share/08768e78bc7a4594a6a216b6ed8dac7d" target="_blank" rel="noreferrer" aria-label="Watch the Ramen Protocol demo">↗</a>
+          </article>
+          <article>
+            <div><small>DeFi · Prototype · Hackathon winner</small><h2>LOANAD</h2><p>An onchain peer-to-peer lending protocol on Monad for borrower-investor credit markets.</p><div class="project-stack" aria-label="Technologies"><span>Solidity</span><span>Foundry</span><span>Monad</span><span>DeFi</span></div></div>
+            <a href="https://drive.google.com/file/d/1AlwwPcH7xVp3_yZYvl97_OtzqOppBNlu/view?usp=sharing" target="_blank" rel="noreferrer" aria-label="Watch the LOANAD demo">↗</a>
+          </article>
+          <article>
+            <div><small>DeFi · Live prototype · Hackathon winner</small><h2>TuCausa</h2><p>A transparent local fundraising platform using USDC on Base with campaign verification and community voting.</p><div class="project-stack" aria-label="Technologies"><span>Next.js</span><span>Solidity</span><span>Foundry</span><span>Wagmi</span></div></div>
+            <a href="https://www.loom.com/share/4e56d79599774d03b3dddb18a4a6f280?sid=5c807cb8-5cda-4660-bc4e-179561ef17aa" target="_blank" rel="noreferrer" aria-label="Watch the TuCausa demo">↗</a>
+          </article>
+        </div>
+      </section>
+      <section class="shop-section" aria-labelledby="shop-work-title">
+        <h2 class="shop-section-title" id="shop-work-title">Previous work</h2>
+        <p class="shop-section-copy">After university, I worked as a Mechanical Designer before moving into blockchain. I co-founded Ethereum Mexico and Kairos Research, working across community, MEV, and DeFi.</p>
+        <div class="work-list">
+          <article><div><h3>Blockchain Researcher / Educator</h3><small>2022–2026</small></div><p>I contributed to blockchain education across Latin America, co-founded Ethereum Mexico, and ran node infrastructure for several blockchains.</p></article>
+          <article><div><h3>Mechanical Engineer</h3><small>2019–2022</small></div><p>After finishing my bachelor’s degree, I worked as a Mechanical Designer and Project Manager in the heat exchanger industry.</p></article>
+        </div>
+      </section>
+    </template>
+
+    <template id="panel-refuge" data-number="" data-location="The refuge">
+      <div class="panel-intro">
+        <h1 class="panel-statement-title" id="panel-title">I love a good story</h1>
+      </div>
+      <div class="refuge-shelf">
+        <article><small>Currently reading</small><h2>The Eternaut</h2></article>
+        <article><small>Now playing</small><h2>Outlast 2</h2></article>
+      </div>
+      <section class="refuge-recommendations" aria-labelledby="refuge-recommendations-title">
+        <h2 class="refuge-section-title" id="refuge-recommendations-title">Here are some of my recommendations:</h2>
+        <div class="recommendation-columns">
+          <section class="recommendation-group" aria-labelledby="recommended-books-title">
+            <h3 id="recommended-books-title">Books</h3>
+            <ul class="recommendation-list">
+              <li><strong>House of Leaves</strong><span>Mark Z. Danielewski</span></li>
+              <li><strong>L’Étranger</strong><span>Albert Camus</span></li>
+              <li><strong>Notes from Underground</strong><span>Fyodor Dostoevsky</span></li>
+              <li><strong>The Game</strong><span>Neil Strauss</span></li>
+              <li><strong>Foundation series</strong><span>Isaac Asimov</span></li>
+              <li><strong>Kokoro</strong><span>Natsume Sōseki</span></li>
+              <li><strong>The Poems of Emily Dickinson</strong><span>Emily Dickinson</span></li>
+            </ul>
+          </section>
+          <section class="recommendation-group" aria-labelledby="recommended-games-title">
+            <h3 id="recommended-games-title">Video games</h3>
+            <ul class="recommendation-list">
+              <li><strong>Halo</strong><span>Original Trilogy and Reach</span></li>
+              <li><strong>Resident Evil</strong><span>2, 4, and Code Veronica</span></li>
+              <li><strong>Outlast</strong></li>
+              <li><strong>Silent Hill</strong><span>2, 4, and Origins</span></li>
+              <li><strong>Assassin’s Creed</strong><span>II, Black Flag, and Unity</span></li>
+              <li><strong>God of War Saga</strong></li>
+              <li><strong>Age of Empires II</strong><span>Definitive Edition</span></li>
+              <li><strong>The Last of Us.</strong><span>Part I & II</span></li>
+            </ul>
+          </section>
+        </div>
+      </section>
+      <section class="refuge-languages" aria-labelledby="refuge-languages-title">
+        <h2 class="refuge-section-title" id="refuge-languages-title">Languages I'm learning</h2>
+        <div class="language-line"><span>Spanish <b>Native</b></span><span>English <b>C1</b></span><span>French <b>B1</b></span><span>German <b>A2</b></span><span>Russian <b>A1</b></span></div>
+      </section>
+    </template>
+
+    <template id="panel-northstar" data-number="" data-location="Northstar">
+      <div class="panel-intro northstar-intro">
+        <h1 class="panel-statement-title" id="panel-title">My personal philosophy<br /><em>rests on three pillars.</em></h1>
+      </div>
+      <div class="thought-list northstar-pillars">
+        <article>
+          <h2>Ichigo Ichie (一期一会)</h2>
+          <p>“One encounter, one lifetime,”. Each meeting is unique and exists in its own space and time as an irreplaceable moment.</p>
+        </article>
+        <article>
+          <h2>This process we follow; this cycle we ride</h2>
+          <p>You can not explain all the known properties of water with three phases alone, you need a fourth phase.</p>
+        </article>
+        <article>
+          <h2>One must imagine Sisyphus happy</h2>
+          <p>The realization that life is absurd cannot be an end, but only a beginning.</p>
+        </article>
+      </div>
+    </template>
+
+    <template id="panel-trailmap" data-number="" data-location="Trail map">
+      <div class="panel-intro">
+        <h1 id="panel-title">Where to <em>next?</em></h1>
+        <p class="panel-lead">A compact view of what I’m pursuing, enjoying, learning, and building right now.</p>
+      </div>
+      <div class="interactive-radar" data-radar-chart>
+        <div class="radar-chart">
+          <svg class="radar-chart-svg" viewBox="0 0 480 400" role="group" aria-label="Current pursuits radar chart" aria-describedby="radar-description">
+            <desc id="radar-description">Eight areas ranked from one to five. Hover, focus, or select an area to read its details.</desc>
+
+            <g class="radar-grid" aria-hidden="true">
+              <polygon points="240,184.4 258.1,191.9 265.6,210 258.1,228.1 240,235.6 221.9,228.1 214.4,210 221.9,191.9"></polygon>
+              <polygon points="240,158.8 276.2,173.8 291.2,210 276.2,246.2 240,261.2 203.8,246.2 188.8,210 203.8,173.8"></polygon>
+              <polygon points="240,133.2 294.31,155.69 316.8,210 294.31,264.31 240,286.8 185.69,264.31 163.2,210 185.69,155.69"></polygon>
+              <polygon points="240,107.6 312.41,137.59 342.4,210 312.41,282.41 240,312.4 167.59,282.41 137.6,210 167.59,137.59"></polygon>
+              <polygon points="240,82 330.51,119.49 368,210 330.51,300.51 240,338 149.49,300.51 112,210 149.49,119.49"></polygon>
+              <line x1="240" y1="210" x2="240" y2="82"></line>
+              <line x1="240" y1="210" x2="330.51" y2="119.49"></line>
+              <line x1="240" y1="210" x2="368" y2="210"></line>
+              <line x1="240" y1="210" x2="330.51" y2="300.51"></line>
+              <line x1="240" y1="210" x2="240" y2="338"></line>
+              <line x1="240" y1="210" x2="149.49" y2="300.51"></line>
+              <line x1="240" y1="210" x2="112" y2="210"></line>
+              <line x1="240" y1="210" x2="149.49" y2="119.49"></line>
+            </g>
+
+            <polygon class="radar-shape" aria-hidden="true" points="240,107.6 276.2,173.8 342.4,210 294.31,264.31 240,338 167.59,282.41 137.6,210 203.8,173.8"></polygon>
+
+            <g class="radar-area radar-area--work" role="button" tabindex="0" aria-pressed="false" aria-label="Work, 4 out of 5" data-radar-area="work">
+              <path class="radar-hit" d="M 240 210 L 169.21 39.1 A 185 185 0 0 1 310.79 39.1 Z"></path>
+              <circle class="radar-point" cx="240" cy="107.6" r="6"></circle>
+              <rect class="radar-label-hit" x="204" y="8" width="72" height="48" rx="4"></rect>
+              <text class="radar-label" x="240" y="30">Work <tspan x="240" dy="16">4 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--playing" role="button" tabindex="0" aria-pressed="false" aria-label="Playing, 2 out of 5" data-radar-area="playing">
+              <path class="radar-hit" d="M 240 210 L 310.79 39.1 A 185 185 0 0 1 410.9 139.21 Z"></path>
+              <circle class="radar-point" cx="276.2" cy="173.8" r="6"></circle>
+              <rect class="radar-label-hit" x="337" y="60" width="82" height="48" rx="4"></rect>
+              <text class="radar-label" x="378" y="82">Gaming <tspan x="378" dy="16">2 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--reading" role="button" tabindex="0" aria-pressed="false" aria-label="Reading, 4 out of 5" data-radar-area="reading">
+              <path class="radar-hit" d="M 240 210 L 410.9 139.21 A 185 185 0 0 1 410.9 280.79 Z"></path>
+              <circle class="radar-point" cx="342.4" cy="210" r="6"></circle>
+              <rect class="radar-label-hit" x="374" y="188" width="82" height="48" rx="4"></rect>
+              <text class="radar-label" x="415" y="210">Reading <tspan x="415" dy="16">4 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--chess" role="button" tabindex="0" aria-pressed="false" aria-label="Chess, 3 out of 5" data-radar-area="chess">
+              <path class="radar-hit" d="M 240 210 L 410.9 280.79 A 185 185 0 0 1 310.79 380.9 Z"></path>
+              <circle class="radar-point" cx="294.31" cy="264.31" r="6"></circle>
+              <rect class="radar-label-hit" x="315" y="322" width="82" height="48" rx="4"></rect>
+              <text class="radar-label" x="356" y="344">Chess <tspan x="356" dy="16">3 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--running" role="button" tabindex="0" aria-pressed="false" aria-label="Running, 5 out of 5" data-radar-area="running">
+              <path class="radar-hit" d="M 240 210 L 310.79 380.9 A 185 185 0 0 1 169.21 380.9 Z"></path>
+              <circle class="radar-point" cx="240" cy="338" r="6"></circle>
+              <rect class="radar-label-hit" x="198" y="342" width="84" height="48" rx="4"></rect>
+              <text class="radar-label" x="240" y="364">Running <tspan x="240" dy="16">5 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--mountain" role="button" tabindex="0" aria-pressed="false" aria-label="Mountain, 4 out of 5" data-radar-area="mountain">
+              <path class="radar-hit" d="M 240 210 L 169.21 380.9 A 185 185 0 0 1 69.1 280.79 Z"></path>
+              <circle class="radar-point" cx="167.59" cy="282.41" r="6"></circle>
+              <rect class="radar-label-hit" x="78" y="322" width="92" height="48" rx="4"></rect>
+              <text class="radar-label" x="124" y="344">Mountain <tspan x="124" dy="16">4 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--french" role="button" tabindex="0" aria-pressed="false" aria-label="Learning French, 4 out of 5" data-radar-area="french">
+              <path class="radar-hit" d="M 240 210 L 69.1 280.79 A 185 185 0 0 1 69.1 139.21 Z"></path>
+              <circle class="radar-point" cx="137.6" cy="210" r="6"></circle>
+              <rect class="radar-label-hit" x="25" y="188" width="82" height="48" rx="4"></rect>
+              <text class="radar-label" x="66" y="210">French <tspan x="66" dy="16">4 / 5</tspan></text>
+            </g>
+            <g class="radar-area radar-area--german" role="button" tabindex="0" aria-pressed="false" aria-label="Learning German, 2 out of 5" data-radar-area="german">
+              <path class="radar-hit" d="M 240 210 L 69.1 139.21 A 185 185 0 0 1 169.21 39.1 Z"></path>
+              <circle class="radar-point" cx="203.8" cy="173.8" r="6"></circle>
+              <rect class="radar-label-hit" x="61" y="60" width="82" height="48" rx="4"></rect>
+              <text class="radar-label" x="102" y="82">German <tspan x="102" dy="16">2 / 5</tspan></text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </template>
+
+    <template id="panel-news" data-number="" data-location="News mailbox">
+      <div class="panel-intro">
+        <h1 id="panel-title"><em>Vlogs</em></h1>
+      </div>
+      <div class="news-list">
+        <a href="https://www.youtube.com/watch?v=xLp-9rapEAo" target="_blank" rel="noreferrer"><time datetime="2026-05-11">11.05.26</time><span><small>Math · Algorithms · Security</small><strong>La matemática secreta detrás de tu tarjeta de crédito</strong></span><i aria-hidden="true">↗</i></a>
+        <a href="https://www.youtube.com/watch?v=kIDGPXqApZI" target="_blank" rel="noreferrer"><time datetime="2026-04-04">04.04.26</time><span><small>Mountaineering · Gear</small><strong>Unboxing Osprey Mutant 38L</strong></span><i aria-hidden="true">↗</i></a>
+        <a href="https://www.youtube.com/watch?v=bFnY7t2iFEk" target="_blank" rel="noreferrer"><time datetime="2026-03-26">26.03.26</time><span><small>Books · Languages · AI</small><strong>Cómo leer tu primer libro en otro idioma</strong></span><i aria-hidden="true">↗</i></a>
+      </div>
+      <footer class="panel-footnote">Lover of knowledge, not master of perfection.</footer>
+    </template>
+
+    <template id="panel-summit" data-number="" data-location="The summit">
+      <div class="summit-panel">
+        <h1 class="summit-quote-text" id="panel-title">It's useless to reach great heights if you're alone,<br /><em>success that is shared, multiplies.</em></h1>
+        <blockquote class="summit-quote">
+          <cite>— Karla Wheelock</cite>
+        </blockquote>
+      </div>
+    </template>
+
+    <noscript><div class="noscript-message">Turn on JavaScript to explore the mountain’s hidden places.</div></noscript>
+  </body>
+</html>
