@@ -10,7 +10,7 @@ website/
 │   ├── favicon.svg
 │   ├── social/                  # Social media icons
 │   └── weather/                 # Editable SVGs, compiled contours, lossless previews
-│       └── reference/           # Untouched original PNGs, used only for QA/retracing
+│       └── reference/           # Original PNGs for QA/retracing and sunny link preview
 ├── css/
 │   ├── styles.css               # Composition and motion
 │   └── scene-hotspots.css       # Generated from shared landmark layouts
@@ -19,6 +19,7 @@ website/
 │   ├── weather-scenes.js        # Initial-paint and runtime scene registry
 │   ├── scene-cache.js           # Draw compiled vector contours once, cache surfaces
 │   ├── mountain-renderer.js     # WebGL liquid-hover renderer
+│   ├── tab-attention.js         # Favicon cue after 10 seconds in another tab
 │   └── weather-music.js         # Web Audio chiptune arrangements
 ├── index.html                   # Scene, panel templates, and content
 ├── scripts/scenes/              # Layouts, editing regions, and trace settings
@@ -44,6 +45,8 @@ npm run dev
 - Edit content in the eight `<template>` elements at the bottom of `index.html`.
 - Desktop and mobile drawing anchors and hotspot sizes share `scripts/scenes/layouts.mjs`. Rebuilding writes `css/scene-hotspots.css`.
 - Weather image paths are in `js/weather-scenes.js`; the 30-second interval is at the top of `js/main.js`.
+- Link-preview metadata in `index.html` always selects the original sunny landscape, independent of the live weather. Its image URLs should be absolute URLs on the public production domain before sharing.
+- `js/tab-attention.js` waits 10 seconds after the tab becomes hidden, then changes the tab title to "Hey, I miss u" and replaces the mountain favicon with 😢. The emoji favicon disappears and reappears every 0.5 seconds until the visitor returns; its off phase uses a transparent icon. Returning restores the original title and mountain favicon. Reduced-motion users get a steady emoji favicon instead. It never changes focus or sends notifications.
 - To add a landmark, create a hotspot with `data-panel="name"`, add `<template id="panel-name">`, and define its `--x` / `--y` position.
 
 The `#world` element can later become a PixiJS or Three.js mount point. Its hotspots should remain in the same transformed container or be projected from the renderer so they continue to track the artwork.
