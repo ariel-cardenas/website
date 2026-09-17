@@ -26,7 +26,7 @@
 .experience[data-weather="snowy"] .hotspot--refuge { --x: 62%; --y: 39%; --hit-w: 12.5%; --hit-h: 14.5%; }
 .experience[data-weather="snowy"] .hotspot--shop { --x: 85%; --y: 72%; --hit-w: 14.5%; --hit-h: 19%; }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (orientation: portrait) {
 .experience[data-weather="sunny"] .hotspot--northstar { --x: 17%; --y: 13%; --hit-w: 18%; --hit-h: 15%; }
 .experience[data-weather="sunny"] .hotspot--base { --x: 17%; --y: 83%; --hit-w: 34%; --hit-h: 26%; }
 .experience[data-weather="sunny"] .hotspot--trailmap { --x: 83%; --y: 42%; --hit-w: 16%; --hit-h: 12%; }

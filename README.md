@@ -47,6 +47,8 @@ npm run dev
 - Weather image paths are in `js/weather-scenes.js`; the 30-second interval is at the top of `js/main.js`.
 - Link-preview metadata in `index.html` always selects the original sunny landscape, independent of the live weather. Its image URLs should be absolute URLs on the public production domain before sharing.
 - `js/tab-attention.js` waits 10 seconds after the tab becomes hidden, then changes the tab title to "Hey, I miss u" and replaces the mountain favicon with 😢. The emoji favicon disappears and reappears every 0.5 seconds until the visitor returns; its off phase uses a transparent icon. Returning restores the original title and mountain favicon. Reduced-motion users get a steady emoji favicon instead. It never changes focus or sends notifications.
+- Touch devices show small, staggered four-second pulses on clickable landmarks instead of relying on hover. Tap targets are at least 44px wide and tall, and markers pause while a panel is open. Reduced-motion users see steady markers; desktop mouse hover remains unchanged.
+- Resizing responds to both viewport dimensions. Portrait or narrow windows use the vertical artwork; landscape windows use the horizontal artwork. Excessive cropping is capped so landmarks stay reachable, with matching blurred scenery filling exposed edges. Panels and their scroll areas resize with the viewport.
 - To add a landmark, create a hotspot with `data-panel="name"`, add `<template id="panel-name">`, and define its `--x` / `--y` position.
 
 The `#world` element can later become a PixiJS or Three.js mount point. Its hotspots should remain in the same transformed container or be projected from the renderer so they continue to track the artwork.

@@ -18,7 +18,7 @@ const hoverTooltip = document.querySelector("#hover-tooltip");
 const hoverTooltipText = document.querySelector("#hover-tooltip-text");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-const mobileScene = window.matchMedia("(max-width: 700px)");
+const mobileScene = window.matchMedia("(max-width: 700px), (orientation: portrait)");
 
 let visibleLayerIndex = 0;
 let currentWeather = window.__MOUNTAIN_INITIAL_WEATHER || "sunny";
@@ -53,6 +53,12 @@ const WIDE_PANEL_NAMES = new Set(["summit", "northstar", "gym"]);
 function weatherAsset(weather) {
   const orientation = mobileScene.matches ? "vertical" : "horizontal";
   return WEATHER_IMAGES[weather][orientation];
+}
+
+function updateSceneBackdrop(weather) {
+  const orientation = mobileScene.matches ? "vertical" : "horizontal";
+  const source = new URL(WEATHER_IMAGES[weather].preview[orientation], document.baseURI);
+  experience.style.setProperty("--scene-backdrop", `url("${source.href}")`);
 }
 
 /**
@@ -121,6 +127,7 @@ async function changeWeather(weather) {
     visibleLayerIndex = nextLayerIndex;
     currentWeather = weather;
     experience.dataset.weather = weather;
+    updateSceneBackdrop(weather);
     mountainRenderer?.transitionTo(weatherAsset(weather));
     weatherMusic.setMood(weather, { bars: 4 });
 
@@ -148,6 +155,7 @@ function getRandomWeather(exclude) {
 // The pre-render bootstrap in index.html selected and mounted this scene.
 const initialWeather = window.__MOUNTAIN_INITIAL_WEATHER || currentWeather;
 experience.dataset.weather = initialWeather;
+updateSceneBackdrop(initialWeather);
 window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], weatherAsset(initialWeather), () => currentWeather === initialWeather && weatherRequestId === 0).catch(() => {
   // The original <picture> remains a working no-canvas fallback.
 });
@@ -335,6 +343,7 @@ function openPanel(name, launchPoint = null) {
   focusWorldOnPanel(name);
 
   if (!panel.open) panel.showModal();
+  experience.classList.add("is-panel-open");
 
   // Measure the panel in its final position, then offset its collapsed state so
   // its center begins exactly where the visitor clicked.
@@ -436,6 +445,7 @@ document.querySelectorAll("[data-panel-link]").forEach((link) => {
 });
 
 closeButton.addEventListener("click", closePanel);
+panel.addEventListener("close", () => experience.classList.remove("is-panel-open"));
 
 // Only a click on the dimmed backdrop—not inside the card—closes the dialog.
 panel.addEventListener("click", (event) => {
@@ -471,6 +481,7 @@ if (!reducedMotion.matches && finePointer.matches) {
 mobileScene.addEventListener("change", () => {
   const requestId = ++weatherRequestId;
   const source = weatherAsset(currentWeather);
+  updateSceneBackdrop(currentWeather);
   sceneLayers[visibleLayerIndex].classList.remove("is-rasterized");
   experience.classList.remove("has-webgl");
   if (focusedPanelName) focusWorldOnPanel(focusedPanelName);

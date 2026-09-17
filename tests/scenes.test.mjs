@@ -39,6 +39,19 @@ test("generated hotspot styles match the geometry source", async () => {
   assert.equal(await readFile(new URL("../css/scene-hotspots.css", import.meta.url), "utf8"), hotspotStyles());
 });
 
+test("responsive scene selection agrees across pictures, CSS, and runtime", async () => {
+  const main = await readFile(new URL("../js/main.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../css/styles.css", import.meta.url), "utf8");
+  const query = main.match(/const mobileScene = window.matchMedia\("([^"]+)"\)/)?.[1];
+  assert.ok(query, "Missing responsive scene query");
+  const pictures = [...html.matchAll(/<source\b[^>]*media="([^"]+)"/g)];
+  assert.equal(pictures.length, 2);
+  for (const picture of pictures) assert.equal(picture[1], query);
+  assert.ok(styles.includes(`@media ${query} {`));
+  assert.ok(hotspotStyles().includes(`@media ${query} {`));
+});
+
 test("the fidelity metric distinguishes matching and changed pixels", () => {
   const image = Buffer.alloc(8 * 8 * 3, 100);
   assert.equal(comparePixels(image, image, 8, 8).ssim, 1);

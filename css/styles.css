@@ -4,7 +4,6 @@
   --paper: #fbf7eb;
   --gold: #f4be54;
   --rust: #a34c32;
-  --hero-min-height: 650px;
   --scene-ratio: 1.776833;
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -39,13 +38,25 @@ button { border: 0; }
 .experience {
   position: relative;
   width: 100%;
+  height: 100vh;
   height: 100svh;
-  min-height: var(--hero-min-height);
+  height: 100dvh;
   overflow: hidden;
   isolation: isolate;
 }
 
-/* Cover math preserves the artwork's ratio. Hotspots share this container. */
+.experience::before {
+  content: "";
+  position: absolute;
+  z-index: -4;
+  inset: -24px;
+  background: var(--scene-backdrop, url("../assets/weather/sunny-horizontal.webp")) center / cover;
+  filter: blur(16px) brightness(0.65);
+  pointer-events: none;
+}
+
+/* Preserve full bleed at normal sizes, but cap cropping in extreme aspect
+   ratios so landmarks remain reachable. Hotspots share the artwork geometry. */
 .world {
   --drift-x: 0px;
   --drift-y: 0px;
@@ -56,8 +67,13 @@ button { border: 0; }
   z-index: -3;
   top: 50%;
   left: 50%;
-  width: max(100%, calc(max(100svh, var(--hero-min-height)) * var(--scene-ratio)));
-  height: max(max(100svh, var(--hero-min-height)), calc(100vw / var(--scene-ratio)));
+  width: min(max(100vw, calc(100vh * var(--scene-ratio))), 120vw, calc(108vh * var(--scene-ratio)));
+  width: min(max(100vw, calc(100svh * var(--scene-ratio))), 120vw, calc(108svh * var(--scene-ratio)));
+  width: min(max(100vw, calc(100dvh * var(--scene-ratio))), 120vw, calc(108dvh * var(--scene-ratio)));
+  height: min(max(100vh, calc(100vw / var(--scene-ratio))), calc(120vw / var(--scene-ratio)), 108vh);
+  height: min(max(100svh, calc(100vw / var(--scene-ratio))), calc(120vw / var(--scene-ratio)), 108svh);
+  height: min(max(100dvh, calc(100vw / var(--scene-ratio))), calc(120vw / var(--scene-ratio)), 108dvh);
+  aspect-ratio: var(--scene-ratio);
   overflow: hidden;
   transform: translate(calc(-50% + var(--drift-x)), calc(-50% + var(--drift-y))) scale(var(--world-scale));
   transform-origin: var(--focus-x) var(--focus-y);
@@ -176,6 +192,62 @@ button { border: 0; }
 /* Landmark coordinates are generated from scripts/scenes/layouts.mjs into
    scene-hotspots.css, which is loaded after this stylesheet. */
 
+/* Touch visitors cannot hover: small, softly breathing markers reveal places
+   to explore without changing the artwork or the landmarks' hit geometry. */
+@media (hover: none), (pointer: coarse) {
+  .hotspot {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .hotspot::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(255, 241, 200, 0.9);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gold) 0 2px, transparent 3px);
+    box-shadow: 0 0 0 1px rgba(18, 55, 59, 0.4), 0 0 10px rgba(244, 190, 84, 0.24);
+    opacity: 0.3;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: touch-landmark-pulse 4s ease-in-out infinite;
+    animation-delay: var(--hint-delay, 0s);
+  }
+
+  .hotspot:nth-child(2) { --hint-delay: -0.5s; }
+  .hotspot:nth-child(3) { --hint-delay: -1s; }
+  .hotspot:nth-child(4) { --hint-delay: -1.5s; }
+  .hotspot:nth-child(5) { --hint-delay: -2s; }
+  .hotspot:nth-child(6) { --hint-delay: -2.5s; }
+  .hotspot:nth-child(7) { --hint-delay: -3s; }
+  .hotspot:nth-child(8) { --hint-delay: -3.5s; }
+
+  .hotspot:active::after {
+    animation: none;
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+
+  .experience.is-panel-open .hotspot::after {
+    animation-play-state: paused;
+    visibility: hidden;
+  }
+}
+
+@keyframes touch-landmark-pulse {
+  0%, 100% { opacity: 0.22; transform: translate(-50%, -50%) scale(0.95); }
+  50% { opacity: 0.65; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hotspot::after { animation: none; }
+}
+
 .hover-tooltip {
   --tooltip-x: -200px;
   --tooltip-y: -200px;
@@ -226,7 +298,8 @@ button { border: 0; }
   inset: 50% clamp(22px, 3.5vw, 54px) auto auto;
   width: min(530px, calc(100vw - 44px));
   max-width: none;
-  max-height: min(82svh, 820px);
+  max-height: min(82vh, 820px);
+  max-height: min(82dvh, 820px);
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -292,7 +365,8 @@ button { border: 0; }
 }
 
 .panel-shell {
-  max-height: min(82svh, 820px);
+  max-height: min(82vh, 820px);
+  max-height: min(82dvh, 820px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -1010,8 +1084,11 @@ button { border: 0; }
   font-size: 0.75rem;
 }
 
+@media (max-width: 700px), (orientation: portrait) {
+  :root { --scene-ratio: 0.562799; }
+}
+
 @media (max-width: 700px) {
-  :root { --hero-min-height: 680px; --scene-ratio: 0.562799; }
 
   .hover-tooltip { display: none; }
 
@@ -1022,7 +1099,8 @@ button { border: 0; }
     --panel-launch-y: 24px;
     inset: auto 10px 10px;
     width: calc(100vw - 20px);
-    max-height: min(79svh, 720px);
+    max-height: min(79vh, 720px);
+    max-height: min(79dvh, 720px);
     border-radius: 8px;
     transform: translate(calc(var(--panel-rest-x) + var(--panel-launch-x)), calc(var(--panel-rest-y) + var(--panel-launch-y))) scale(var(--panel-launch-scale));
   }
@@ -1044,7 +1122,7 @@ button { border: 0; }
 
   .panel.is-open { transform: translate(var(--panel-rest-x), var(--panel-rest-y)) scale(1); }
   .panel.is-closing { transform: translate(0, 18px) scale(0.99); }
-  .panel-shell { max-height: min(79svh, 720px); }
+  .panel-shell { max-height: min(79vh, 720px); max-height: min(79dvh, 720px); }
   .panel-content { padding: 28px 23px 22px; }
   .panel h1 { font-size: clamp(2.45rem, 12vw, 3.35rem); }
   .panel h1.panel-statement-title { font-size: clamp(1.96rem, 9.6vw, 2.68rem); }
