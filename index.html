@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Ariel's interactive mountain — software, ideas, projects, and stories from the trail." />
+    <meta name="description" content="Welcome to my personal space." />
     <meta name="theme-color" content="#173d42" />
     <title>Ariel Cárdenas</title>
+    <script src="js/weather-scenes.js?v=2"></script>
     <script>
       // Choose the initial scene before the document paints. Excluding the last
       // session value makes hard-reload testing visibly alternate while the next
       // state is still selected randomly from the other two possibilities.
       (() => {
-        const weatherNames = ["sunny", "rainy", "snowy"];
+        const weatherNames = Object.keys(window.MOUNTAIN_WEATHER_SCENES);
         let previousWeather = null;
 
         try {
@@ -24,7 +25,10 @@
         const randomValue = globalThis.crypto?.getRandomValues
           ? globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
           : Math.random();
-        const initialWeather = choices[Math.floor(randomValue * choices.length)];
+        const requestedWeather = new URLSearchParams(window.location.search).get("weather");
+        const initialWeather = weatherNames.includes(requestedWeather)
+          ? requestedWeather
+          : choices[Math.floor(randomValue * choices.length)];
 
         window.__MOUNTAIN_INITIAL_WEATHER = initialWeather;
         document.documentElement.dataset.initialWeather = initialWeather;
@@ -37,20 +41,22 @@
       })();
     </script>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css?v=38" />
-    <script src="js/mountain-renderer.js?v=8" defer></script>
+    <link rel="stylesheet" href="css/styles.css?v=40" />
+    <link rel="stylesheet" href="css/scene-hotspots.css?v=2" />
+    <script src="js/scene-cache.js?v=1" defer></script>
+    <script src="js/mountain-renderer.js?v=9" defer></script>
     <script src="js/weather-music.js?v=3" defer></script>
-    <script src="js/main.js?v=26" defer></script>
+    <script src="js/main.js?v=28" defer></script>
   </head>
 
   <body>
-    <main class="experience" data-weather="sunny" aria-label="Ariel's interactive mountain portfolio">
+    <main class="experience" data-weather="sunny" aria-label="Welcome to my personal space.">
       <!-- Images and hotspots share this aspect-ratio container, keeping every
            clickable point attached to its landmark while the scene is cropped. -->
       <div class="world" id="world">
         <picture class="scene-layer is-visible" data-scene-layer="0">
-          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.png" />
-          <img src="assets/weather/sunny-horizontal.png" alt="" fetchpriority="high" />
+          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.webp" />
+          <img src="assets/weather/sunny-horizontal.webp" alt="" fetchpriority="high" />
         </picture>
         <script>
           // Replace the fallback source synchronously, before first paint, with
@@ -58,30 +64,31 @@
           (() => {
             const weather = window.__MOUNTAIN_INITIAL_WEATHER || "sunny";
             const layer = document.currentScript.previousElementSibling;
-            layer.querySelector("source").srcset = `assets/weather/${weather}-vertical.png`;
-            layer.querySelector("img").src = `assets/weather/${weather}-horizontal.png`;
+            const assets = window.MOUNTAIN_WEATHER_SCENES[weather];
+            layer.querySelector("source").srcset = assets.preview.vertical;
+            layer.querySelector("img").src = assets.preview.horizontal;
             document.querySelector(".experience").dataset.weather = weather;
           })();
         </script>
         <picture class="scene-layer" data-scene-layer="1">
-          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.png" />
-          <img src="assets/weather/sunny-horizontal.png" alt="" />
+          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.webp" />
+          <img src="assets/weather/sunny-horizontal.webp" alt="" />
         </picture>
         <!-- WebGL progressively replaces the pictures on supported desktops.
              The pictures remain underneath as a no-JS/WebGL fallback. -->
         <canvas class="mountain-canvas" id="mountain-canvas" aria-hidden="true"></canvas>
         <div class="atmosphere" aria-hidden="true"></div>
 
-        <!-- Hotspot coordinates are defined and documented in css/styles.css. -->
+        <!-- Hotspot coordinates come from scripts/scenes/layouts.mjs. -->
         <div class="hotspot-layer" role="group" aria-label="Places to explore">
           <button class="hotspot hotspot--northstar" type="button" data-panel="northstar" data-focus-view data-tooltip="Northstar · Personal philosophy" aria-label="Look to the Northstar — Ariel's personal philosophy"></button>
-          <button class="hotspot hotspot--base" type="button" data-panel="base" data-focus-view data-tooltip="Base camp · About Ariel" aria-label="Visit base camp — about Ariel"></button>
+          <button class="hotspot hotspot--base" type="button" data-panel="base" data-focus-view data-tooltip="Base camp · About Me" aria-label="Visit base camp — about me"></button>
           <button class="hotspot hotspot--gym" type="button" data-panel="gym" data-tooltip="Training zone · Skills and goals" aria-label="Visit the training zone — skills and goals"></button>
-          <button class="hotspot hotspot--shop" type="button" data-panel="shop" data-focus-view data-tooltip="Gear shop · Projects" aria-label="Visit the gear shop — projects"></button>
+          <button class="hotspot hotspot--shop" type="button" data-panel="shop" data-focus-view data-tooltip="Gear shop · Portfolio" aria-label="Visit the gear shop — Portfolio"></button>
           <button class="hotspot hotspot--refuge" type="button" data-panel="refuge" data-focus-view data-tooltip="Shangri-La refuge · Books, videogames and languages" aria-label="Visit Shangri-La refuge — books, videogames and languages"></button>
           <button class="hotspot hotspot--trailmap" type="button" data-panel="trailmap" data-focus-view data-tooltip="Trail map · Routes and objectives" aria-label="Explore the trail map — routes and objectives"></button>
           <button class="hotspot hotspot--mailbox" type="button" data-panel="news" data-focus-view data-tooltip="News mailbox · Vlogs and blog entries" aria-label="Open the news mailbox — vlogs and blog entries"></button>
-          <button class="hotspot hotspot--summit" type="button" data-panel="summit" data-tooltip="Summit · Get in touch" aria-label="Reach the summit — contact Ariel"></button>
+          <button class="hotspot hotspot--summit" type="button" data-panel="summit" data-tooltip="The Summit" aria-label="Reach the summit — contact Ariel"></button>
         </div>
       </div>
 

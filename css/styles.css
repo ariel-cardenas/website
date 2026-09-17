@@ -80,12 +80,16 @@ button { border: 0; }
 
 .scene-layer.is-visible { opacity: 1; }
 
-.scene-layer img {
+.scene-layer img,
+.scene-raster {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: fill;
 }
+
+.scene-raster { position: absolute; inset: 0; }
+.scene-layer.is-rasterized img { visibility: hidden; }
 
 .mountain-canvas {
   position: absolute;
@@ -168,34 +172,8 @@ button { border: 0; }
   transform: translate(-50%, -50%);
 }
 
-/* Sunny positions for the 1672 × 941 horizontal scenes. */
-.hotspot--northstar { --x: 14.3%; --y: 23%; --hit-w: 15%; --hit-h: 20%; }
-.hotspot--base { --x: 17%; --y: 85%; --hit-w: 30%; --hit-h: 25%; }
-.hotspot--trailmap { --x: 71%; --y: 47%; --hit-w: 9%; --hit-h: 18%; }
-.hotspot--mailbox { --x: 75%; --y: 86%; --hit-w: 5%; --hit-h: 11%; }
-.hotspot--gym { --x: 53%; --y: 75%; --hit-w: 11.5%; --hit-h: 14.5%; }
-.hotspot--summit { --x: 58%; --y: 9%; --hit-w: 14%; --hit-h: 18%; }
-.hotspot--refuge { --x: 61%; --y: 39%; --hit-w: 12.5%; --hit-h: 14.5%; }
-.hotspot--shop { --x: 85%; --y: 71%; --hit-w: 14.5%; --hit-h: 19%; }
-
-/* The compositions shift slightly between weather states. */
-.experience[data-weather="rainy"] .hotspot--northstar { --x: 25%; --y: 8.5%; }
-.experience[data-weather="rainy"] .hotspot--base { --x: 14.5%; --y: 85%; --hit-w: 29%; --hit-h: 24%; }
-.experience[data-weather="rainy"] .hotspot--trailmap { --x: 71%; --y: 49%; }
-.experience[data-weather="rainy"] .hotspot--mailbox { --x: 75%; --y: 86%; }
-.experience[data-weather="rainy"] .hotspot--gym { --x: 52%; --y: 75%; }
-.experience[data-weather="rainy"] .hotspot--summit { --x: 57%; --y: 8%; }
-.experience[data-weather="rainy"] .hotspot--refuge { --x: 61%; --y: 38%; }
-.experience[data-weather="rainy"] .hotspot--shop { --x: 85%; --y: 71%; }
-
-.experience[data-weather="snowy"] .hotspot--northstar { --x: 14.3%; --y: 24%; }
-.experience[data-weather="snowy"] .hotspot--base { --x: 15.5%; --y: 87%; --hit-w: 29%; --hit-h: 25%; }
-.experience[data-weather="snowy"] .hotspot--trailmap { --x: 75.5%; --y: 45%; }
-.experience[data-weather="snowy"] .hotspot--mailbox { --x: 74%; --y: 86.5%; }
-.experience[data-weather="snowy"] .hotspot--gym { --x: 53%; --y: 78%; }
-.experience[data-weather="snowy"] .hotspot--summit { --x: 58%; --y: 7%; }
-.experience[data-weather="snowy"] .hotspot--refuge { --x: 62%; --y: 39%; }
-.experience[data-weather="snowy"] .hotspot--shop { --x: 85%; --y: 72%; }
+/* Landmark coordinates are generated from scripts/scenes/layouts.mjs into
+   scene-hotspots.css, which is loaded after this stylesheet. */
 
 .hover-tooltip {
   --tooltip-x: -200px;
@@ -1033,34 +1011,6 @@ button { border: 0; }
 
 @media (max-width: 700px) {
   :root { --hero-min-height: 680px; --scene-ratio: 0.562799; }
-
-  /* Sunny positions for the 941 × 1672 vertical scene. */
-  .hotspot--northstar { --x: 17%; --y: 13%; --hit-w: 18%; --hit-h: 15%; }
-  .hotspot--base { --x: 17%; --y: 83%; --hit-w: 34%; --hit-h: 26%; }
-  .hotspot--trailmap { --x: 83%; --y: 42%; --hit-w: 16%; --hit-h: 12%; }
-  .hotspot--mailbox { --x: 68%; --y: 77%; --hit-w: 10%; --hit-h: 8%; }
-  .hotspot--gym { --x: 47%; --y: 65%; --hit-w: 15.5%; --hit-h: 11.5%; }
-  .hotspot--summit { --x: 60%; --y: 7%; --hit-w: 17%; --hit-h: 12%; }
-  .hotspot--refuge { --x: 68%; --y: 34%; --hit-w: 18%; --hit-h: 10%; }
-  .hotspot--shop { --x: 80%; --y: 66%; --hit-w: 20%; --hit-h: 12.5%; }
-
-  .experience[data-weather="rainy"] .hotspot--northstar { --x: 17.5%; --y: 13%; }
-  .experience[data-weather="rainy"] .hotspot--base { --x: 15%; --y: 80%; }
-  .experience[data-weather="rainy"] .hotspot--trailmap { --x: 86%; --y: 38%; }
-  .experience[data-weather="rainy"] .hotspot--mailbox { --x: 68%; --y: 76%; }
-  .experience[data-weather="rainy"] .hotspot--gym { --x: 50%; --y: 62%; }
-  .experience[data-weather="rainy"] .hotspot--summit { --x: 60%; --y: 8%; }
-  .experience[data-weather="rainy"] .hotspot--refuge { --x: 68%; --y: 32%; }
-  .experience[data-weather="rainy"] .hotspot--shop { --x: 79%; --y: 63%; }
-
-  .experience[data-weather="snowy"] .hotspot--northstar { --x: 20%; --y: 14%; }
-  .experience[data-weather="snowy"] .hotspot--base { --x: 19%; --y: 83%; }
-  .experience[data-weather="snowy"] .hotspot--trailmap { --x: 86%; --y: 44%; }
-  .experience[data-weather="snowy"] .hotspot--mailbox { --x: 69%; --y: 79%; }
-  .experience[data-weather="snowy"] .hotspot--gym { --x: 46%; --y: 68%; }
-  .experience[data-weather="snowy"] .hotspot--summit { --x: 66%; --y: 9%; }
-  .experience[data-weather="snowy"] .hotspot--refuge { --x: 70%; --y: 37%; }
-  .experience[data-weather="snowy"] .hotspot--shop { --x: 80%; --y: 69%; }
 
   .hover-tooltip { display: none; }
 

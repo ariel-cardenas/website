@@ -1,17 +1,4 @@
-const WEATHER_IMAGES = {
-  sunny: {
-    horizontal: "assets/weather/sunny-horizontal.png",
-    vertical: "assets/weather/sunny-vertical.png",
-  },
-  rainy: {
-    horizontal: "assets/weather/rainy-horizontal.png",
-    vertical: "assets/weather/rainy-vertical.png",
-  },
-  snowy: {
-    horizontal: "assets/weather/snowy-horizontal.png",
-    vertical: "assets/weather/snowy-vertical.png",
-  },
-};
+const WEATHER_IMAGES = window.MOUNTAIN_WEATHER_SCENES;
 
 const WEATHER_CHANGE_INTERVAL = 30 * 1000;
 const weatherNames = Object.keys(WEATHER_IMAGES);
@@ -112,7 +99,7 @@ function clearWorldFocus() {
  * The incoming weather loads into the hidden <picture>. Once decoded, the two
  * layers crossfade. The browser chooses the horizontal or vertical source.
  */
-function changeWeather(weather) {
+async function changeWeather(weather) {
   if (!WEATHER_IMAGES[weather] || weather === currentWeather) return;
 
   const requestId = ++weatherRequestId;
@@ -122,8 +109,8 @@ function changeWeather(weather) {
   const nextImage = nextLayer.querySelector("img");
   const assets = WEATHER_IMAGES[weather];
 
-  nextSource.srcset = assets.vertical;
-  nextImage.src = assets.horizontal;
+  nextSource.srcset = assets.preview.vertical;
+  nextImage.src = assets.preview.horizontal;
 
   const reveal = () => {
     // Ignore an older load if the visitor selected another weather quickly.
@@ -140,12 +127,15 @@ function changeWeather(weather) {
     weatherAnnouncement.textContent = `${weather[0].toUpperCase()}${weather.slice(1)} weather is now active.`;
   };
 
-  if (nextImage.decode) {
-    nextImage.decode().then(reveal).catch(reveal);
-  } else if (nextImage.complete) {
-    reveal();
-  } else {
-    nextImage.addEventListener("load", reveal, { once: true });
+  try {
+    const painted = await window.MountainSceneCache.paint(nextLayer, weatherAsset(weather), () => requestId === weatherRequestId);
+    if (painted) {
+      reveal();
+      if (focusedPanelName) focusWorldOnPanel(focusedPanelName);
+    }
+  } catch (error) {
+    // Keep the complete outgoing scene if an incoming file fails to decode.
+    console.warn("Weather change unavailable; retaining the current scene.", error);
   }
 }
 
@@ -158,6 +148,9 @@ function getRandomWeather(exclude) {
 // The pre-render bootstrap in index.html selected and mounted this scene.
 const initialWeather = window.__MOUNTAIN_INITIAL_WEATHER || currentWeather;
 experience.dataset.weather = initialWeather;
+window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], weatherAsset(initialWeather), () => currentWeather === initialWeather && weatherRequestId === 0).catch(() => {
+  // The original <picture> remains a working no-canvas fallback.
+});
 
 /**
  * AUDIO
@@ -207,9 +200,11 @@ if (
 }
 
 // After 30 seconds, and every 30 seconds thereafter, the mountain changes.
-window.setInterval(() => {
-  changeWeather(getRandomWeather(currentWeather));
-}, WEATHER_CHANGE_INTERVAL);
+window.MountainSceneCache.get(weatherAsset(initialWeather)).finally(() => {
+  window.setInterval(() => {
+    changeWeather(getRandomWeather(currentWeather));
+  }, WEATHER_CHANGE_INTERVAL);
+}).catch(() => {});
 
 /**
  * PANEL SYSTEM
@@ -471,7 +466,10 @@ if (!reducedMotion.matches && finePointer.matches) {
 // If the browser crosses the mobile breakpoint, swap the WebGL texture to the
 // matching composition. The DOM <picture> fallback does this automatically.
 mobileScene.addEventListener("change", () => {
+  const requestId = ++weatherRequestId;
+  window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], weatherAsset(currentWeather), () => requestId === weatherRequestId).catch(() => {});
   mountainRenderer?.transitionTo(weatherAsset(currentWeather), 700);
+  warmWeatherScenes();
 });
 
 // Direct links such as index.html#shop open their panel automatically.
@@ -480,20 +478,25 @@ if (document.querySelector(`#panel-${initialPanel}`)) {
   window.addEventListener("load", () => openPanel(initialPanel), { once: true });
 }
 
-// Preload only the orientation this device needs after the initial scene appears.
+// Prepare only the current composition, sequentially, outside the frame loop.
+// Later transitions reuse decoded surfaces and already-uploaded GPU textures.
+async function warmWeatherScenes() {
+  const orientation = mobileScene.matches ? "vertical" : "horizontal";
+  for (const assets of Object.values(WEATHER_IMAGES)) {
+    if ((mobileScene.matches ? "vertical" : "horizontal") !== orientation) return;
+    try {
+      await window.MountainSceneCache.get(assets[orientation]);
+      if (mountainRenderer?.ready) await mountainRenderer.preload(assets[orientation]);
+    } catch (_) {
+      // A missing preload must not blank or stop the current scene.
+    }
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+  }
+}
 window.addEventListener("load", () => {
-  const preloadWeather = () => {
-    const orientation = window.matchMedia("(max-width: 700px)").matches ? "vertical" : "horizontal";
-
-    Object.values(WEATHER_IMAGES).forEach((assets) => {
-      const image = new Image();
-      image.src = assets[orientation];
-    });
-  };
-
   if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(preloadWeather);
+    window.requestIdleCallback(warmWeatherScenes);
   } else {
-    window.setTimeout(preloadWeather, 600);
+    window.setTimeout(warmWeatherScenes, 600);
   }
 });

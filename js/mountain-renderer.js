@@ -103,6 +103,9 @@
       this.nextTexture = null;
       this.currentSource = "";
       this.nextSource = "";
+      this.textureCache = new Map();
+      this.textureLoads = new Map();
+      this.destroyed = false;
       this.textureMix = 0;
       this.transitionStartedAt = 0;
       this.transitionDuration = 1100;
@@ -234,6 +237,7 @@
     }
 
     loadImage(source) {
+      if (window.MountainSceneCache) return window.MountainSceneCache.get(source);
       return new Promise((resolve, reject) => {
         const image = new Image();
         image.decoding = "async";
@@ -244,8 +248,21 @@
     }
 
     async loadTexture(source) {
+      if (this.textureCache.has(source)) return this.textureCache.get(source);
+      if (this.textureLoads.has(source)) return this.textureLoads.get(source);
+      const loading = this.uploadTexture(source).finally(() => this.textureLoads.delete(source));
+      this.textureLoads.set(source, loading);
+      return loading;
+    }
+
+    async preload(source) {
+      if (this.ready) await this.loadTexture(source);
+    }
+
+    async uploadTexture(source) {
       const image = await this.loadImage(source);
       const gl = this.gl;
+      if (this.destroyed || !gl || gl.isContextLost()) throw new Error("Scene context unavailable");
       const texture = gl.createTexture();
 
       gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -256,6 +273,7 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       gl.bindTexture(gl.TEXTURE_2D, null);
+      this.textureCache.set(source, texture);
       return texture;
     }
 
@@ -267,11 +285,9 @@
       try {
         const texture = await this.loadTexture(source);
         if (token !== this.loadToken || !this.ready) {
-          this.gl.deleteTexture(texture);
           return;
         }
 
-        if (this.nextTexture) this.gl.deleteTexture(this.nextTexture);
         this.nextTexture = texture;
         this.nextSource = source;
         this.textureMix = 0;
@@ -377,7 +393,6 @@
         this.textureMix = progress * progress * (3 - 2 * progress);
 
         if (progress >= 1) {
-          this.gl.deleteTexture(this.currentTexture);
           this.currentTexture = this.nextTexture;
           this.currentSource = this.nextSource;
           this.nextTexture = null;
@@ -419,13 +434,15 @@
     }
 
     destroy() {
+      this.destroyed = true;
+      this.loadToken++;
       this.stop();
       this.resizeObserver?.disconnect();
       window.removeEventListener("resize", this.resize);
       this.ready = false;
       if (!this.gl) return;
-      if (this.currentTexture) this.gl.deleteTexture(this.currentTexture);
-      if (this.nextTexture) this.gl.deleteTexture(this.nextTexture);
+      for (const texture of this.textureCache.values()) this.gl.deleteTexture(texture);
+      this.textureCache.clear();
       if (this.geometryBuffer) this.gl.deleteBuffer(this.geometryBuffer);
       if (this.program) this.gl.deleteProgram(this.program);
     }

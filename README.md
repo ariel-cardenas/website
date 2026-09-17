@@ -1,4 +1,4 @@
-# Ariel's interactive mountain
+# Personal Website
 
 A single-screen, framework-free portfolio. The mountain is the interface: eight landmarks open soft content panels. Weather is selected before first paint, avoids repeating the previous session value on reload, and crossfades to a different random state every 30 seconds.
 
@@ -9,34 +9,56 @@ website/
 ├── assets/
 │   ├── favicon.svg
 │   ├── social/                  # Social media icons
-│   └── weather/                 # Desktop and mobile weather scenes
+│   └── weather/                 # Editable SVG artwork and original PNG references
 ├── css/
 │   └── styles.css               # Composition, landmarks, and motion
 ├── js/
 │   ├── main.js                  # Weather, dialogs, hotspots, audio, and parallax
+│   ├── weather-scenes.js        # Initial-paint and runtime scene registry
+│   ├── scene-cache.js           # Decode and rasterize each SVG once
 │   ├── mountain-renderer.js     # WebGL liquid-hover renderer
 │   └── weather-music.js         # Web Audio chiptune arrangements
 ├── index.html                   # Scene, panel templates, and content
+├── scripts/scenes/              # Layouts, editing regions, and trace settings
+├── scripts/build-scenes.mjs     # Apply layouts and generate matching hotspot CSS
+├── scripts/trace-scenes.mjs     # Explicit high-fidelity PNG-to-vector conversion
+├── docs/fidelity/               # Native-size whole-scene and landmark comparisons
+├── tests/                       # Scene integrity and real-browser interaction tests
+├── package.json
 ├── package-lock.json
 └── README.md
 ```
 
 ## Run locally
 
-Open `index.html` directly or serve the folder with any static web server:
+Use a static HTTP server for vector rendering. Opening `index.html` directly uses the generated preview fallback. With Node installed:
 
 ```sh
-python3 -m http.server 8000
+npm run dev
 ```
 
 ## Extend it
 
-- Edit content in the six `<template>` elements at the bottom of `index.html`.
-- Desktop and mobile hotspot coordinates are grouped and commented in `css/styles.css`.
-- Weather image paths and the 30-second interval are collected at the top of `js/main.js`.
+- Edit content in the eight `<template>` elements at the bottom of `index.html`.
+- Desktop and mobile drawing anchors and hotspot sizes share `scripts/scenes/layouts.mjs`. Rebuilding writes `css/scene-hotspots.css`.
+- Weather image paths are in `js/weather-scenes.js`; the 30-second interval is at the top of `js/main.js`.
 - To add a landmark, create a hotspot with `data-panel="name"`, add `<template id="panel-name">`, and define its `--x` / `--y` position.
 
 The `#world` element can later become a PixiJS or Three.js mount point. Its hotspots should remain in the same transformed container or be projected from the renderer so they continue to track the artwork.
+
+## Editable background artwork
+
+The sunny background is a high-fidelity contour trace of the original PNG, preserving its composition, lighting, lettering, and fine texture rather than replacing it with simplified shapes. Its SVG contains genuine editable paths, no `<image>` elements or encoded bitmap data. Whole-scene and regional native-size comparisons are recorded in `docs/fidelity/`.
+
+Matching this illustration's detail requires large vector files. They are not a download-size optimization. The normal runtime downloads compressed `.scene.json.gz` drawing instructions, builds `Path2D` contours, and renders them once at the original resolution in small batches. No large SVG document is mounted or rendered by the browser. Camera movement, crossfades, and WebGL reuse cached surfaces/textures without rebuilding geometry. Lossless WebP previews generated from the same SVG source provide immediate first paint, no-JavaScript support, and graceful fallbacks. Source vectors do not invent detail beyond the original PNG resolution.
+
+- Edit geometry and `fill` colors directly in `assets/weather/*.svg`, using code or an SVG editor. Named groups such as `layer-refuge`, `layer-shop`, and `layer-base` divide the artwork into editing regions. Each region includes surrounding scenery; it is not a separately rigged object, and moving it may require filling the exposed background.
+- Edit landmark positions in `scripts/scenes/layouts.mjs`.
+- Run `npm run build:scenes` after any artwork or layout edits. It updates SVG region offsets and hotspot CSS, compiles contours to compressed drawing instructions, and rebuilds lossless previews without retracing or overwriting path geometry. The compiler supports translated editing groups with solid-color SVG paths and rejects unsupported transforms. Committed runtime artifacts require no deployment build step.
+- `npm run trace:scenes -- sunny` explicitly regenerates both sunny SVGs from their original PNGs, overwriting manual vector edits. The originals are retained for this purpose and for fidelity tests.
+- Preview a specific starting scene with `/?weather=sunny`, `/?weather=rainy`, or `/?weather=snowy`. Automatic rotation still continues every 30 seconds.
+
+`npm test` checks verified vector hashes, SVG references, editing regions, and generated hit regions. `npm run test:fidelity` independently re-renders the SVGs against the original PNGs (global SSIM ≥ 0.985, each landmark region ≥ 0.97). Intentional artwork edits will change these reference checks and should be reviewed explicitly. `npm run test:browser` checks real desktop/mobile clicks, browser-rendered PNG comparisons, no-JavaScript fallback, and weather timing. Tests use local Brave when available; otherwise install Chromium with `npx playwright install chromium` (or set `CHROMIUM_EXECUTABLE`). Run `npm install` first for development tools; the deployed site has no runtime dependencies.
 
 On fine-pointer desktop devices, `js/mountain-renderer.js` progressively replaces the image layer with a WebGL canvas. It applies a localized, time-varying displacement inside the hovered landmark's exact responsive bounds. The invisible zones cover the combined base camp, sun/night star, trail map, training area, summit, Shangri-La refuge, gear shop, and news mailbox. The mailbox contains vlogs and blog entries; the trail map contains routes and objectives. Touch devices, reduced-motion users, unsupported GPUs, and lost WebGL contexts continue using the original image layers.
 
