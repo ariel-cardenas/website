@@ -88,7 +88,8 @@ button { border: 0; }
   object-fit: fill;
 }
 
-.scene-raster { position: absolute; inset: 0; }
+.scene-raster { position: absolute; inset: 0; display: none; }
+.scene-layer.is-rasterized .scene-raster { display: block; }
 .scene-layer.is-rasterized img { visibility: hidden; }
 
 .mountain-canvas {

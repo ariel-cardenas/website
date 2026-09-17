@@ -259,6 +259,31 @@
       if (this.ready) await this.loadTexture(source);
     }
 
+    emitSceneReady() {
+      this.canvas.dispatchEvent(new CustomEvent("mountainsceneready", { detail: { source: this.currentSource } }));
+    }
+
+    // A breakpoint is a different composition, not a weather crossfade. Keep
+    // the matching preview visible until the corresponding texture is ready.
+    async setSource(source) {
+      if (!this.ready) return false;
+      const token = ++this.loadToken;
+      try {
+        const texture = await this.loadTexture(source);
+        if (!this.ready || token !== this.loadToken) return false;
+        this.currentTexture = texture;
+        this.currentSource = source;
+        this.nextTexture = null;
+        this.nextSource = "";
+        this.textureMix = 0;
+        this.render(performance.now());
+        this.emitSceneReady();
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
     async uploadTexture(source) {
       const image = await this.loadImage(source);
       const gl = this.gl;
@@ -278,7 +303,19 @@
     }
 
     async transitionTo(source, duration = 1100) {
-      if (!this.ready || source === this.currentSource || source === this.nextSource) return;
+      if (!this.ready) return;
+      // Rapidly switching back must cancel the incoming weather, not keep
+      // fading toward it while the DOM has already returned to the old state.
+      if (source === this.currentSource) {
+        ++this.loadToken;
+        this.nextTexture = null;
+        this.nextSource = "";
+        this.textureMix = 0;
+        this.render(performance.now());
+        this.emitSceneReady();
+        return;
+      }
+      if (source === this.nextSource) return;
 
       const token = ++this.loadToken;
 
@@ -398,6 +435,7 @@
           this.nextTexture = null;
           this.nextSource = "";
           this.textureMix = 0;
+          this.emitSceneReady();
         }
       }
 

@@ -1,0 +1,68 @@
+{
+  "weather": "snowy",
+  "orientation": "vertical",
+  "width": 941,
+  "height": 1672,
+  "sourceSha256": "fdeaaa5da9aff742e701ad1f4315fda900463b999088f4244152bd42a5f0117a",
+  "svgSha256": "e5a4b3c42db6c57e0f97cffd055bdabdf1239330c004bcdb2d5c6845206f6bc3",
+  "quantizationStep": 4,
+  "traceOptions": {
+    "mode": "pixel",
+    "hierarchical": "cutout",
+    "filterSpeckle": 0,
+    "colorPrecision": 8,
+    "layerDifference": 4,
+    "pathPrecision": 2,
+    "optimize": 2
+  },
+  "bytes": 28897132,
+  "gzipBytes": 6559115,
+  "paths": 186367,
+  "metrics": {
+    "ssim": 0.9954829335246722,
+    "rmse": 1.4320253643972587,
+    "psnr": 45.01178940119474
+  },
+  "regionMetrics": {
+    "news": {
+      "ssim": 0.9983967835950146,
+      "rmse": 1.3853140343581671,
+      "psnr": 45.29983892869201
+    },
+    "trailmap": {
+      "ssim": 0.9986674620793988,
+      "rmse": 1.36373933008023,
+      "psnr": 45.4361762950339
+    },
+    "gym": {
+      "ssim": 0.9980322876086664,
+      "rmse": 1.3993616264659752,
+      "psnr": 45.2122043998432
+    },
+    "shop": {
+      "ssim": 0.9979169874266827,
+      "rmse": 1.4072313117154034,
+      "psnr": 45.16349381144299
+    },
+    "refuge": {
+      "ssim": 0.9988466625598371,
+      "rmse": 1.3714540999974607,
+      "psnr": 45.387178065477286
+    },
+    "summit": {
+      "ssim": 0.9892016917468002,
+      "rmse": 1.5785768547745296,
+      "psnr": 44.165488991596675
+    },
+    "northstar": {
+      "ssim": 0.9855554926108516,
+      "rmse": 1.5479841578672007,
+      "psnr": 44.33547337303442
+    },
+    "base": {
+      "ssim": 0.9978657586263763,
+      "rmse": 1.399360356101705,
+      "psnr": 45.21221228504503
+    }
+  }
+}

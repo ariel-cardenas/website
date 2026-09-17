@@ -1,7 +1,7 @@
 /** Update layout anchors on existing editable contours. Never retrace edits. */
 import { readFile, writeFile } from "node:fs/promises";
 import { layouts, hotspotStyles } from "./scenes/layouts.mjs";
-import { scenarios } from "./scenes/catalog.mjs";
+import { scenarios, sourceDirectory } from "./scenes/catalog.mjs";
 import { compileScene } from "./scenes/compile.mjs";
 import { gzipSync } from "node:zlib";
 import sharp from "sharp";
@@ -32,7 +32,7 @@ for (const name of names) {
 }
 await writeFile(new URL("css/scene-hotspots.css", root), hotspotStyles());
 const registry = Object.fromEntries(Object.entries(scenarios).map(([name, scene]) => [name, {
-  ...Object.fromEntries(["horizontal", "vertical"].map(orientation => [orientation, `assets/weather/${name}-${orientation}.${scene.converted ? "svg" : "png"}`])),
-  preview: Object.fromEntries(["horizontal", "vertical"].map(orientation => [orientation, `assets/weather/${name}-${orientation}.${scene.converted ? "webp" : "png"}`])),
+  ...Object.fromEntries(["horizontal", "vertical"].map(orientation => [orientation, `${scene.converted ? "assets/weather" : sourceDirectory}/${name}-${orientation}.${scene.converted ? "svg" : "png"}`])),
+  preview: Object.fromEntries(["horizontal", "vertical"].map(orientation => [orientation, `${scene.converted ? "assets/weather" : sourceDirectory}/${name}-${orientation}.${scene.converted ? "webp" : "png"}`])),
 }]));
 await writeFile(new URL("js/weather-scenes.js", root), `/** Generated registry. Geometry lives in assets/weather/*.svg. */\nwindow.MOUNTAIN_WEATHER_SCENES = Object.freeze(${JSON.stringify(registry, null, 2)});\n`);

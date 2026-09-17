@@ -9,18 +9,20 @@ website/
 ├── assets/
 │   ├── favicon.svg
 │   ├── social/                  # Social media icons
-│   └── weather/                 # Editable SVG artwork and original PNG references
+│   └── weather/                 # Editable SVGs, compiled contours, lossless previews
+│       └── reference/           # Untouched original PNGs, used only for QA/retracing
 ├── css/
-│   └── styles.css               # Composition, landmarks, and motion
+│   ├── styles.css               # Composition and motion
+│   └── scene-hotspots.css       # Generated from shared landmark layouts
 ├── js/
 │   ├── main.js                  # Weather, dialogs, hotspots, audio, and parallax
 │   ├── weather-scenes.js        # Initial-paint and runtime scene registry
-│   ├── scene-cache.js           # Decode and rasterize each SVG once
+│   ├── scene-cache.js           # Draw compiled vector contours once, cache surfaces
 │   ├── mountain-renderer.js     # WebGL liquid-hover renderer
 │   └── weather-music.js         # Web Audio chiptune arrangements
 ├── index.html                   # Scene, panel templates, and content
 ├── scripts/scenes/              # Layouts, editing regions, and trace settings
-├── scripts/build-scenes.mjs     # Apply layouts and generate matching hotspot CSS
+├── scripts/build-scenes.mjs     # Compile contours, previews, and hotspot CSS
 ├── scripts/trace-scenes.mjs     # Explicit high-fidelity PNG-to-vector conversion
 ├── docs/fidelity/               # Native-size whole-scene and landmark comparisons
 ├── tests/                       # Scene integrity and real-browser interaction tests
@@ -48,7 +50,7 @@ The `#world` element can later become a PixiJS or Three.js mount point. Its hots
 
 ## Editable background artwork
 
-The sunny and rainy backgrounds are high-fidelity contour traces of their original PNGs, preserving composition, lighting, lettering, and fine texture rather than replacing them with simplified shapes. Their SVGs contain genuine editable paths, no `<image>` elements or encoded bitmap data. Whole-scene and regional native-size comparisons are recorded in `docs/fidelity/`.
+All three backgrounds (sunny, rainy, snowy) are high-fidelity contour traces of their original PNGs, preserving composition, lighting, lettering, and fine texture rather than replacing them with simplified shapes. Each has separate desktop and mobile vectors. Their SVGs contain genuine editable paths, no `<image>` elements or encoded bitmap data. Whole-scene and regional native-size comparisons are recorded in `docs/fidelity/`.
 
 Matching this illustration's detail requires large vector files. They are not a download-size optimization. The normal runtime downloads compressed `.scene.json.gz` drawing instructions, builds `Path2D` contours, and renders them once at the original resolution in small batches. No large SVG document is mounted or rendered by the browser. Camera movement, crossfades, and WebGL reuse cached surfaces/textures without rebuilding geometry. Lossless WebP previews generated from the same SVG source provide immediate first paint, no-JavaScript support, and graceful fallbacks. Source vectors do not invent detail beyond the original PNG resolution.
 
@@ -58,9 +60,9 @@ Matching this illustration's detail requires large vector files. They are not a 
 - `npm run trace:scenes -- sunny` explicitly regenerates both sunny SVGs from their original PNGs, overwriting manual vector edits. The originals are retained for this purpose and for fidelity tests.
 - Preview a specific starting scene with `/?weather=sunny`, `/?weather=rainy`, or `/?weather=snowy`. Automatic rotation still continues every 30 seconds.
 
-`npm test` checks verified vector hashes, SVG references, editing regions, and generated hit regions. `npm run test:fidelity` independently re-renders the SVGs against the original PNGs (global SSIM ≥ 0.985, each landmark region ≥ 0.97). Intentional artwork edits will change these reference checks and should be reviewed explicitly. `npm run test:browser` checks real desktop/mobile clicks, browser-rendered PNG comparisons, no-JavaScript fallback, and weather timing. Tests use local Brave when available; otherwise install Chromium with `npx playwright install chromium` (or set `CHROMIUM_EXECUTABLE`). Run `npm install` first for development tools; the deployed site has no runtime dependencies.
+`npm test` checks verified vector hashes, SVG references, editing regions, and generated hit regions. `npm run test:fidelity` independently re-renders the SVGs against the original PNGs (global SSIM ≥ 0.985, each landmark region ≥ 0.97). Intentional artwork edits will change these reference checks and should be reviewed explicitly. `npm run test:browser` checks real desktop/mobile clicks, browser-rendered PNG comparisons, touch input, resizing, cache reuse, WebGL loss, no-JavaScript fallback, and weather timing. Tests use local Brave when available; otherwise install Chromium with `npx playwright install chromium` (or set `CHROMIUM_EXECUTABLE`). Run `npm install` first for development tools; the deployed site has no runtime dependencies.
 
-On fine-pointer desktop devices, `js/mountain-renderer.js` progressively replaces the image layer with a WebGL canvas. It applies a localized, time-varying displacement inside the hovered landmark's exact responsive bounds. The invisible zones cover the combined base camp, sun/night star, trail map, training area, summit, Shangri-La refuge, gear shop, and news mailbox. The mailbox contains vlogs and blog entries; the trail map contains routes and objectives. Touch devices, reduced-motion users, unsupported GPUs, and lost WebGL contexts continue using the original image layers.
+On fine-pointer desktop devices, `js/mountain-renderer.js` progressively replaces the scene layer with a WebGL canvas. It applies a localized, time-varying displacement inside the hovered landmark's exact responsive bounds. The invisible zones cover the combined base camp, sun/night star, trail map, training area, summit, Shangri-La refuge, gear shop, and news mailbox. The mailbox contains vlogs and blog entries; the trail map contains routes and objectives. Touch devices, reduced-motion users, unsupported GPUs, and lost WebGL contexts continue using the cached code-rendered canvas, or its generated preview if vector rendering is unavailable.
 
 Base Camp, Northstar, Shangri-La Refuge, Trail Map, Gear Shop, and News Mailbox
 use a focused-view transition. The complete `.world` layer scales around the

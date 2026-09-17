@@ -185,13 +185,16 @@ if (
   window.MountainRenderer
 ) {
   mountainRenderer = new window.MountainRenderer(mountainCanvas);
-  mountainRenderer.initialize(weatherAsset(initialWeather)).then((enabled) => {
+  mountainRenderer.initialize(weatherAsset(initialWeather)).then(async (enabled) => {
     if (enabled) {
-      experience.classList.add("has-webgl");
       // Covers a rare breakpoint change while the first texture was decoding.
-      mountainRenderer.transitionTo(weatherAsset(currentWeather), 700);
+      await mountainRenderer.setSource(weatherAsset(currentWeather));
       if (focusedPanelName) focusWorldOnPanel(focusedPanelName);
     }
+  });
+
+  mountainCanvas.addEventListener("mountainsceneready", (event) => {
+    if (event.detail.source === weatherAsset(currentWeather)) experience.classList.add("has-webgl");
   });
 
   mountainCanvas.addEventListener("mountaincontextlost", () => {
@@ -467,8 +470,13 @@ if (!reducedMotion.matches && finePointer.matches) {
 // matching composition. The DOM <picture> fallback does this automatically.
 mobileScene.addEventListener("change", () => {
   const requestId = ++weatherRequestId;
-  window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], weatherAsset(currentWeather), () => requestId === weatherRequestId).catch(() => {});
-  mountainRenderer?.transitionTo(weatherAsset(currentWeather), 700);
+  const source = weatherAsset(currentWeather);
+  sceneLayers[visibleLayerIndex].classList.remove("is-rasterized");
+  experience.classList.remove("has-webgl");
+  if (focusedPanelName) focusWorldOnPanel(focusedPanelName);
+  window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], source, () => requestId === weatherRequestId).then(async (painted) => {
+    if (painted && requestId === weatherRequestId) await mountainRenderer?.setSource(source);
+  }).catch(() => {});
   warmWeatherScenes();
 });
 

@@ -17,11 +17,11 @@ window.MOUNTAIN_WEATHER_SCENES = Object.freeze({
     }
   },
   "snowy": {
-    "horizontal": "assets/weather/snowy-horizontal.png",
-    "vertical": "assets/weather/snowy-vertical.png",
+    "horizontal": "assets/weather/snowy-horizontal.svg",
+    "vertical": "assets/weather/snowy-vertical.svg",
     "preview": {
-      "horizontal": "assets/weather/snowy-horizontal.png",
-      "vertical": "assets/weather/snowy-vertical.png"
+      "horizontal": "assets/weather/snowy-horizontal.webp",
+      "vertical": "assets/weather/snowy-vertical.webp"
     }
   }
 });
