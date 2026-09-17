@@ -36,11 +36,11 @@
         }
       })();
     </script>
-    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=37" />
-    <script src="mountain-renderer.js?v=7" defer></script>
-    <script src="weather-music.js?v=2" defer></script>
-    <script src="main.js?v=25" defer></script>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css?v=38" />
+    <script src="js/mountain-renderer.js?v=8" defer></script>
+    <script src="js/weather-music.js?v=3" defer></script>
+    <script src="js/main.js?v=26" defer></script>
   </head>
 
   <body>
@@ -49,31 +49,30 @@
            clickable point attached to its landmark while the scene is cropped. -->
       <div class="world" id="world">
         <picture class="scene-layer is-visible" data-scene-layer="0">
-          <source media="(max-width: 700px)" srcset="Sunny V.png" />
-          <img src="Sunny H.png" alt="" fetchpriority="high" />
+          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.png" />
+          <img src="assets/weather/sunny-horizontal.png" alt="" fetchpriority="high" />
         </picture>
         <script>
           // Replace the fallback source synchronously, before first paint, with
           // the weather selected in <head>.
           (() => {
             const weather = window.__MOUNTAIN_INITIAL_WEATHER || "sunny";
-            const labels = { sunny: "Sunny", rainy: "Rainy", snowy: "Snowy" };
             const layer = document.currentScript.previousElementSibling;
-            layer.querySelector("source").srcset = `${labels[weather]} V.png`;
-            layer.querySelector("img").src = `${labels[weather]} H.png`;
+            layer.querySelector("source").srcset = `assets/weather/${weather}-vertical.png`;
+            layer.querySelector("img").src = `assets/weather/${weather}-horizontal.png`;
             document.querySelector(".experience").dataset.weather = weather;
           })();
         </script>
         <picture class="scene-layer" data-scene-layer="1">
-          <source media="(max-width: 700px)" srcset="Sunny V.png" />
-          <img src="Sunny H.png" alt="" />
+          <source media="(max-width: 700px)" srcset="assets/weather/sunny-vertical.png" />
+          <img src="assets/weather/sunny-horizontal.png" alt="" />
         </picture>
         <!-- WebGL progressively replaces the pictures on supported desktops.
              The pictures remain underneath as a no-JS/WebGL fallback. -->
         <canvas class="mountain-canvas" id="mountain-canvas" aria-hidden="true"></canvas>
         <div class="atmosphere" aria-hidden="true"></div>
 
-        <!-- Hotspot coordinates are defined and documented in styles.css. -->
+        <!-- Hotspot coordinates are defined and documented in css/styles.css. -->
         <div class="hotspot-layer" role="group" aria-label="Places to explore">
           <button class="hotspot hotspot--northstar" type="button" data-panel="northstar" data-focus-view data-tooltip="Northstar · Personal philosophy" aria-label="Look to the Northstar — Ariel's personal philosophy"></button>
           <button class="hotspot hotspot--base" type="button" data-panel="base" data-focus-view data-tooltip="Base camp · About Ariel" aria-label="Visit base camp — about Ariel"></button>
@@ -95,7 +94,7 @@
       <span id="hover-tooltip-text"></span>
     </div>
 
-    <!-- A single native dialog is reused for every location. main.js clones the
+    <!-- A single native dialog is reused for every location. js/main.js clones the
          selected template into it, keeping content editable in plain HTML. -->
     <dialog class="panel" id="mountain-panel" aria-labelledby="panel-title">
       <div class="panel-shell">

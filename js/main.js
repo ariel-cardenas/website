@@ -1,10 +1,19 @@
 const WEATHER_IMAGES = {
-  sunny: { horizontal: "Sunny H.png", vertical: "Sunny V.png" },
-  rainy: { horizontal: "Rainy H.png", vertical: "Rainy V.png" },
-  snowy: { horizontal: "Snowy H.png", vertical: "Snowy V.png" },
+  sunny: {
+    horizontal: "assets/weather/sunny-horizontal.png",
+    vertical: "assets/weather/sunny-vertical.png",
+  },
+  rainy: {
+    horizontal: "assets/weather/rainy-horizontal.png",
+    vertical: "assets/weather/rainy-vertical.png",
+  },
+  snowy: {
+    horizontal: "assets/weather/snowy-horizontal.png",
+    vertical: "assets/weather/snowy-vertical.png",
+  },
 };
 
-const WEATHER_CHANGE_INTERVAL = 5 * 60 * 1000;
+const WEATHER_CHANGE_INTERVAL = 30 * 1000;
 const weatherNames = Object.keys(WEATHER_IMAGES);
 
 const experience = document.querySelector(".experience");
@@ -197,7 +206,7 @@ if (
   });
 }
 
-// After five minutes, and every five minutes thereafter, the mountain changes.
+// After 30 seconds, and every 30 seconds thereafter, the mountain changes.
 window.setInterval(() => {
   changeWeather(getRandomWeather(currentWeather));
 }, WEATHER_CHANGE_INTERVAL);
