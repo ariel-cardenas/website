@@ -48,7 +48,7 @@ The `#world` element can later become a PixiJS or Three.js mount point. Its hots
 
 ## Editable background artwork
 
-The sunny background is a high-fidelity contour trace of the original PNG, preserving its composition, lighting, lettering, and fine texture rather than replacing it with simplified shapes. Its SVG contains genuine editable paths, no `<image>` elements or encoded bitmap data. Whole-scene and regional native-size comparisons are recorded in `docs/fidelity/`.
+The sunny and rainy backgrounds are high-fidelity contour traces of their original PNGs, preserving composition, lighting, lettering, and fine texture rather than replacing them with simplified shapes. Their SVGs contain genuine editable paths, no `<image>` elements or encoded bitmap data. Whole-scene and regional native-size comparisons are recorded in `docs/fidelity/`.
 
 Matching this illustration's detail requires large vector files. They are not a download-size optimization. The normal runtime downloads compressed `.scene.json.gz` drawing instructions, builds `Path2D` contours, and renders them once at the original resolution in small batches. No large SVG document is mounted or rendered by the browser. Camera movement, crossfades, and WebGL reuse cached surfaces/textures without rebuilding geometry. Lossless WebP previews generated from the same SVG source provide immediate first paint, no-JavaScript support, and graceful fallbacks. Source vectors do not invent detail beyond the original PNG resolution.
 

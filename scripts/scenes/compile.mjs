@@ -7,7 +7,9 @@ export function compileScene(svg) {
   const attribute = (tag, name) => tag.match(new RegExp(`\\b${name}="([^"]+)"`))?.[1];
   const scene = { version: 1, width: Number(attribute(root, "width")), height: Number(attribute(root, "height")), sourceSha256: createHash("sha256").update(svg).digest("hex"), layers: [] };
   let layer;
-  for (const match of svg.matchAll(/<\/?g\b[^>]*>|<path\b[^>]*\/>/g)) {
+  const clips = new Map([...svg.matchAll(/<clipPath\b([^>]+)><path\b([^>]+)\/><\/clipPath>/g)].map(match => [attribute(match[1], "id"), attribute(match[2], "d")]));
+  const artwork = svg.replace(/<defs>[\s\S]*?<\/defs>/g, "");
+  for (const match of artwork.matchAll(/<\/?g\b[^>]*>|<path\b[^>]*\/>/g)) {
     const tag = match[0];
     if (tag.startsWith("</g")) { layer = undefined; continue; }
     if (tag.startsWith("<g")) {
@@ -15,6 +17,9 @@ export function compileScene(svg) {
       const transform = attribute(tag, "transform")?.match(/^translate\(([-\d.]+)\s+([-\d.]+)\)$/);
       if (!transform) throw new Error("Editing regions must use a translate(x y) transform");
       layer = { name: attribute(tag, "id"), x: Number(transform[1]), y: Number(transform[2]), paths: [] };
+      const clip = attribute(tag, "clip-path")?.match(/^url\(#([^\)]+)\)$/)?.[1];
+      if (clip && !clips.has(clip)) throw new Error(`Missing editing-region clip: ${clip}`);
+      if (clip) layer.clip = clips.get(clip);
       scene.layers.push(layer);
     } else {
       if (!layer || /\btransform=/.test(tag)) throw new Error("Transformed or ungrouped path needs explicit compiler support");

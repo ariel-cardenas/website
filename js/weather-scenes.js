@@ -9,11 +9,11 @@ window.MOUNTAIN_WEATHER_SCENES = Object.freeze({
     }
   },
   "rainy": {
-    "horizontal": "assets/weather/rainy-horizontal.png",
-    "vertical": "assets/weather/rainy-vertical.png",
+    "horizontal": "assets/weather/rainy-horizontal.svg",
+    "vertical": "assets/weather/rainy-vertical.svg",
     "preview": {
-      "horizontal": "assets/weather/rainy-horizontal.png",
-      "vertical": "assets/weather/rainy-vertical.png"
+      "horizontal": "assets/weather/rainy-horizontal.webp",
+      "vertical": "assets/weather/rainy-vertical.webp"
     }
   },
   "snowy": {

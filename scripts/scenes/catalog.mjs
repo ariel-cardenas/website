@@ -1,7 +1,7 @@
 /** Convert and commit one weather at a time. PNGs remain until converted. */
 export const scenarios = {
   sunny: { title: "Sunny alpine mountain", converted: true },
-  rainy: { title: "Rainy alpine mountain", converted: false },
+  rainy: { title: "Rainy alpine mountain", converted: true },
   snowy: { title: "Snowy alpine mountain", converted: false },
 };
 export const sourceDirectory = "assets/weather";

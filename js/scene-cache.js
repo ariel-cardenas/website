@@ -40,7 +40,9 @@
     if (!context) throw new Error("2D vector surface unavailable");
     let budgetStarted = performance.now();
     for (const layer of scene.layers) {
+      context.save();
       context.setTransform(1, 0, 0, 1, layer.x, layer.y);
+      if (layer.clip) context.clip(new Path2D(layer.clip));
       for (const [fill, contours] of layer.paths) {
         context.fillStyle = fill;
         context.fill(new Path2D(contours));
@@ -49,6 +51,7 @@
           budgetStarted = performance.now();
         }
       }
+      context.restore();
     }
     canvas.dataset.renderer = "vector";
     return canvas;

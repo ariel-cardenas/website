@@ -21,7 +21,7 @@ for (const theme of themes) {
       const packed = await readFile(new URL(`../assets/weather/${theme}-${orientation}.scene.json.gz`, import.meta.url));
       const compiled = JSON.parse(gunzipSync(packed));
       assert.equal(compiled.sourceSha256, report.svgSha256);
-      assert.equal(compiled.layers.reduce((count, layer) => count + layer.paths.length, 0), report.paths);
+      assert.equal(compiled.layers.reduce((count, layer) => count + layer.paths.length + (layer.clip ? 1 : 0), 0), report.paths);
       assert.deepEqual(compiled.layers.map(layer => layer.name).sort(), landmarks.map(name => `layer-${name}`).sort());
       assert.ok(report.metrics.ssim >= minimumSimilarity);
       for (const metrics of Object.values(report.regionMetrics)) assert.ok(metrics.ssim >= minimumRegionSimilarity);
