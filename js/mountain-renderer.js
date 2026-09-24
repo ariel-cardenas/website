@@ -285,7 +285,8 @@
     }
 
     async uploadTexture(source) {
-      const image = await this.loadImage(source);
+      const surface = await this.loadImage(source);
+      const image = surface.image ?? surface;
       const gl = this.gl;
       if (this.destroyed || !gl || gl.isContextLost()) throw new Error("Scene context unavailable");
       const texture = gl.createTexture();
