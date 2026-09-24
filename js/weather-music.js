@@ -21,6 +21,7 @@
   const BASS_ROOTS = [36, 43, 45, 41, 36, 43, 38, 43];
   const MUTE_STORAGE_KEY = "mountain-music-muted";
   const DEFAULT_VOLUME = 0.46;
+  const STARTUP_FADE_SECONDS = 5;
 
   const SUNNY_CHORDS = [
     [72, 76, 79, 83], // Cmaj7
@@ -93,6 +94,7 @@
     let volume = DEFAULT_VOLUME;
     let mood = normalizeMood(safeGetMood());
     let buses = null;
+    let fadedIn = false;
     const pulseWaves = new Map();
     const gainFades = new Map();
 
@@ -578,11 +580,22 @@
       }
 
       started = true;
-      if (nextStepTime === null || nextStepTime < context.currentTime) {
-        nextStepTime = context.currentTime + 0.055;
+      const now = context.currentTime;
+      if (nextStepTime === null || nextStepTime < now) {
+        nextStepTime = now + 0.055;
       }
-      masterGain.gain.cancelScheduledValues(context.currentTime);
-      masterGain.gain.setTargetAtTime(muted ? 0 : volume, context.currentTime, 0.018);
+      masterGain.gain.cancelScheduledValues(now);
+
+      // The first loop rises over five seconds so arriving on the page is calm.
+      const fadeIn = !fadedIn && !muted;
+      fadedIn = true;
+
+      if (fadeIn) {
+        masterGain.gain.setValueAtTime(0.0001, now);
+        masterGain.gain.exponentialRampToValueAtTime(volume, now + STARTUP_FADE_SECONDS);
+      } else {
+        masterGain.gain.setTargetAtTime(muted ? 0 : volume, now, 0.018);
+      }
       scheduler();
       emitState();
       return true;

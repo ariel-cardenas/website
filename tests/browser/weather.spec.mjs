@@ -160,6 +160,36 @@ test("desktop/mobile breakpoint swaps keep the correct composition and open pane
   }
 });
 
+test("the WebGL scene is oriented like the canvas one it replaces", async ({ page, context }, testInfo) => {
+  const viewport = { width: 1440, height: 810 };
+  await page.setViewportSize(viewport);
+  // No reduced motion here: the WebGL layer only replaces the picture when
+  // animation is allowed, so the canvas rendering comes from a second page.
+  await page.goto("/?weather=sunny");
+  await page.waitForFunction(() => Boolean(mountainRenderer?.ready), null, { timeout: 20_000 }).catch(() => {});
+  test.skip(!(await page.evaluate(() => Boolean(mountainRenderer?.ready))), "no WebGL in this browser");
+  await expect(page.locator(".experience")).toHaveClass(/has-webgl/);
+  const gpu = await page.screenshot({ path: testInfo.outputPath("webgl.png") });
+
+  const canvasPage = await context.newPage();
+  await canvasPage.setViewportSize(viewport);
+  await canvasPage.emulateMedia({ reducedMotion: "reduce" });
+  await canvasPage.goto("/?weather=sunny");
+  await expect(canvasPage.locator(".scene-layer.is-visible")).toHaveClass(/is-rasterized/);
+  await expect(canvasPage.locator(".experience")).not.toHaveClass(/has-webgl/);
+  const canvas = await canvasPage.screenshot({ path: testInfo.outputPath("canvas.png") });
+
+  const metrics = comparePixels(
+    await sharp(canvas).removeAlpha().raw().toBuffer(),
+    await sharp(gpu).removeAlpha().raw().toBuffer(),
+    viewport.width,
+    viewport.height,
+  );
+  console.log(`webgl vs canvas similarity: ${metrics.ssim.toFixed(6)}`);
+  expect(metrics.ssim).toBeGreaterThanOrEqual(.95);
+  await canvasPage.close();
+});
+
 test("losing WebGL retains the cached code-rendered scene", async ({ page }) => {
   await page.goto("/?weather=sunny");
   await expect(page.locator(".scene-layer.is-visible")).toHaveAttribute("data-scene-renderer", "vector");
