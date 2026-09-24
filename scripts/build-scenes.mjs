@@ -26,7 +26,10 @@ for (const name of names) {
     });
     await writeFile(target, svg);
     await writeFile(new URL(`assets/weather/${name}-${orientation}.scene.json.gz`, root), gzipSync(JSON.stringify(compileScene(svg)), { level: 9 }));
-    await sharp(Buffer.from(svg)).webp({ lossless: true, effort: 6 }).toFile(new URL(`assets/weather/${name}-${orientation}.webp`, root).pathname);
+    // The preview only has to survive a blurred backdrop and the moment before
+    // the vector surface is ready, so quality 90 keeps it visually equal to the
+    // PNG reference at roughly a quarter of the lossless download.
+    await sharp(Buffer.from(svg)).webp({ quality: 90, effort: 6, smartSubsample: true }).toFile(new URL(`assets/weather/${name}-${orientation}.webp`, root).pathname);
     console.log(`Updated ${name}/${orientation}`);
   }
 }

@@ -27,6 +27,8 @@ let closingTimer;
 let focusResetTimer;
 let mountainRenderer = null;
 let focusedPanelName = null;
+let weatherIsDue = false;
+let scheduledWeather = getRandomWeather(currentWeather);
 
 const PANEL_FOCUS_SCALE = {
   northstar: 1.62,
@@ -152,6 +154,19 @@ function getRandomWeather(exclude) {
   return choices[Math.floor(Math.random() * choices.length)];
 }
 
+/** Metered and very slow connections keep the scene they already paid for. */
+function prefetchIsWelcome() {
+  const connection = navigator.connection;
+  if (!connection) return true;
+  return !connection.saveData && !/2g/.test(connection.effectiveType || "");
+}
+
+function advanceWeather() {
+  const weather = scheduledWeather;
+  scheduledWeather = getRandomWeather(weather);
+  changeWeather(weather).finally(scheduleSceneWarmup);
+}
+
 // The pre-render bootstrap in index.html selected and mounted this scene.
 const initialWeather = window.__MOUNTAIN_INITIAL_WEATHER || currentWeather;
 experience.dataset.weather = initialWeather;
@@ -177,7 +192,6 @@ function startWeatherMusic() {
 }
 
 weatherMusic.setMuted(false);
-startWeatherMusic();
 window.addEventListener("load", startWeatherMusic, { once: true });
 document.addEventListener("click", startWeatherMusic, { once: true, capture: true });
 
@@ -211,9 +225,15 @@ if (
 }
 
 // After 30 seconds, and every 30 seconds thereafter, the mountain changes.
+// A hidden tab keeps its turn until it is looked at again: crossfading and
+// rasterizing artwork nobody can see only costs battery.
 window.MountainSceneCache.get(weatherAsset(initialWeather)).finally(() => {
   window.setInterval(() => {
-    changeWeather(getRandomWeather(currentWeather));
+    if (document.hidden) {
+      weatherIsDue = true;
+      return;
+    }
+    advanceWeather();
   }, WEATHER_CHANGE_INTERVAL);
 }).catch(() => {});
 
@@ -485,10 +505,18 @@ mobileScene.addEventListener("change", () => {
   sceneLayers[visibleLayerIndex].classList.remove("is-rasterized");
   experience.classList.remove("has-webgl");
   if (focusedPanelName) focusWorldOnPanel(focusedPanelName);
+  // The phone sheet and the desktop dialog rest in different places, so an open
+  // panel would otherwise slide across the viewport for half a second after the
+  // breakpoint flips. Snap it to its new placement instead.
+  if (panel.open) {
+    panel.classList.add("is-preparing");
+    void panel.offsetWidth;
+    panel.classList.remove("is-preparing");
+  }
   window.MountainSceneCache.paint(sceneLayers[visibleLayerIndex], source, () => requestId === weatherRequestId).then(async (painted) => {
     if (painted && requestId === weatherRequestId) await mountainRenderer?.setSource(source);
   }).catch(() => {});
-  warmWeatherScenes();
+  scheduleSceneWarmup();
 });
 
 // Direct links such as index.html#shop open their panel automatically.
@@ -497,25 +525,39 @@ if (document.querySelector(`#panel-${initialPanel}`)) {
   window.addEventListener("load", () => openPanel(initialPanel), { once: true });
 }
 
-// Prepare only the current composition, sequentially, outside the frame loop.
-// Later transitions reuse decoded surfaces and already-uploaded GPU textures.
+// Prepare the one composition that comes next, outside the frame loop, so the
+// crossfade reuses a decoded surface and an already-uploaded GPU texture. The
+// remaining scenes are several megabytes each and are fetched the same way,
+// one turn before they are shown, instead of all at once during load.
 async function warmWeatherScenes() {
-  const orientation = mobileScene.matches ? "vertical" : "horizontal";
-  for (const assets of Object.values(WEATHER_IMAGES)) {
-    if ((mobileScene.matches ? "vertical" : "horizontal") !== orientation) return;
-    try {
-      await window.MountainSceneCache.get(assets[orientation]);
-      if (mountainRenderer?.ready) await mountainRenderer.preload(assets[orientation]);
-    } catch (_) {
-      // A missing preload must not blank or stop the current scene.
+  if (document.hidden || !prefetchIsWelcome()) return;
+  const source = weatherAsset(scheduledWeather);
+  try {
+    await window.MountainSceneCache.get(source);
+    if (mountainRenderer?.ready && source === weatherAsset(scheduledWeather)) {
+      await mountainRenderer.preload(source);
     }
-    await new Promise(resolve => window.setTimeout(resolve, 0));
+  } catch (_) {
+    // A missing preload must not blank or stop the current scene.
   }
 }
-window.addEventListener("load", () => {
+
+function scheduleSceneWarmup() {
   if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(warmWeatherScenes);
+    window.requestIdleCallback(warmWeatherScenes, { timeout: 4000 });
   } else {
     window.setTimeout(warmWeatherScenes, 600);
   }
+}
+
+window.addEventListener("load", scheduleSceneWarmup);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (weatherIsDue) {
+    weatherIsDue = false;
+    advanceWeather();
+    return;
+  }
+  scheduleSceneWarmup();
 });
