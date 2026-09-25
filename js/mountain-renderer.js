@@ -287,18 +287,29 @@
     async uploadTexture(source) {
       const surface = await this.loadImage(source);
       const image = surface.image ?? surface;
+      // The shader samples with the origin at the bottom left. Canvas and image
+      // sources get there through UNPACK_FLIP_Y_WEBGL, which texImage2D ignores
+      // for an ImageBitmap: those carry their own orientation instead.
+      const bitmap = typeof ImageBitmap === "function" && image instanceof ImageBitmap;
+      const texel = bitmap
+        ? await createImageBitmap(image, { imageOrientation: "flipY" })
+        : image;
       const gl = this.gl;
-      if (this.destroyed || !gl || gl.isContextLost()) throw new Error("Scene context unavailable");
+      if (this.destroyed || !gl || gl.isContextLost()) {
+        if (bitmap) texel.close();
+        throw new Error("Scene context unavailable");
+      }
       const texture = gl.createTexture();
 
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !bitmap);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texel);
       gl.bindTexture(gl.TEXTURE_2D, null);
+      if (bitmap) texel.close();
       this.textureCache.set(source, texture);
       return texture;
     }
